@@ -1,5 +1,5 @@
 ## FoppaInit
-=============================
+-------------------------------------------------------------------------
 * Initialization of the FOPPA database
 
 * Copyright 2021-2022 Lucas Potin & Vincent Labatut
