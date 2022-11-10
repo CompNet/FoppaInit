@@ -834,12 +834,12 @@ def siretization(database):
     names = np.array(datas["name"]) 
     sirets = np.array(datas["siret"])
     newSirets = np.array(datas["siretPropose"])
+    addresses = np.array(datas["address"]) 
+    citys = np.array(datas["city"]) 
+    zipcodes = np.array(datas["zipcode"]) 
     nomSirene = np.array(datas["NomSirene"])
     adresseSirene = np.array(datas["AdresseSirene"])
     villeSirene = np.array(datas["VilleSirene"])
-    addresses = np.array(datas["address"]) 
-    citys = np.array(datas["city"]) 
-    zipcodes = np.array(datas["newCP"]) 
     cpSirene = np.array(datas["CPSirene"])
     for i in range(len(sirets)):
         if len(str(newSirets[i]))>9:
@@ -867,9 +867,59 @@ def mergingAfterSiretization(database):
 
 def deduping(database):
     
+    
+    return database
+    
 def finalTableAgent(database):
+    cursor = database.cursor()
+    datas = pd.read_sql_query("SELECT * FROM AgentsSiretiser", database,dtype=str) 
+    ids = np.array(datas["ids"]) 
+    types = np.array(datas["type"]) 
+    names = np.array(datas["name"]) 
+    sirets = np.array(datas["siret"])
+    addresses = np.array(datas["address"]) 
+    citys = np.array(datas["city"]) 
+    zipcodes = np.array(datas["zipcode"]) 
+    countrys = np.array(datas["country"]) 
+    
+    ############
+    #French special departement
+    dicoDepartement = {
+        "200":"2A",
+        "201":"2A",
+        "202":"2B",
+        "206":"2B",
+        "971":"971",
+        "972":"972",
+        "973":"973",
+        "974":"974",
+        "975":"975",
+        "976":"976",
+        "977":"977",
+        "978":"978",
+        "986":"986",
+        "987":"987",
+        "988":"988"}
+    departement = []     
+    for i in range(len(datas)):
+        ### Modif departement:
+        departement = dicoDepartement.get(zipcodes[i][0:3],zipcodes[i][0:2])
+        sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department)
+                VALUES (?,?,?,?,?,?,?,?)'''
+        val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],departement)
+        oldNumbers = str(ids[i]).split("-")
+        for old in oldNumbers:
+            request ="UPDATE LotClients SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
+            sql = cursor.execute(request)
+            request ="UPDATE LotSuppliers SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
+            sql = cursor.execute(request)
+    
+    ###  
+    database.commit()
+    return database
     
 def informationCompletion(database):
+    return database
         
 
 ##### Main 
