@@ -14,6 +14,7 @@ from rapidfuzz import fuzz
 from rapidfuzz import process
 
 def databaseCreation(nameDatabase):
+    """Creation of the tables of the database"""
     database = sqlite3.connect(nameDatabase)
     cursor = database.cursor()
     request = "DROP TABLE IF EXISTS AgentsBase"
@@ -52,22 +53,29 @@ def databaseCreation(nameDatabase):
     return database
 
 def load_csv_files():
+    """Extraction of the csv files into the database"""
     listeFichiers = []
     newDF = []
     for (repertoire, sousRepertoires, fichiers) in walk("../data/TedAwardNotices/csv"):
         listeFichiers.extend(fichiers)
     for j in listeFichiers:
         datas = pd.read_csv("../data/TedAwardNotices/csv/"+j,dtype=str)
+        # We only keep french contracts
         newDF.append(datas[datas["ISO_COUNTRY_CODE"].str.contains("FR")])
     result = pd.concat(newDF)
     return result
 
 def firstCleaning(datas,database):
     columns = datas.columns
+    
+    # First cleaning : Normalize + Upper strings
     for column in columns:
         datas[column] = datas[column].str.upper()
         datas[column]= datas[column].str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8')
+    
+    # Parenthesis deletion
     datas["CAE_NAME"] = datas["CAE_NAME"].replace(regex=r'\([^)]*\)',value=r"")
+    
     nameCAE = np.array(datas["CAE_NAME"])
     siretCAE = np.array(datas["CAE_NATIONALID"])
     addressCAE = np.array(datas["CAE_ADDRESS"])
@@ -80,27 +88,9 @@ def firstCleaning(datas,database):
     townWIN = np.array(datas["WIN_TOWN"])
     postalCodeWIN = np.array(datas["WIN_POSTAL_CODE"])
     countryWIN = np.array(datas["WIN_COUNTRY_CODE"])
-
     tedCANID = np.array(datas["ID_NOTICE_CAN"])
     corrections = np.array(datas["CORRECTIONS"])
     cancelled = np.array(datas["CANCELLED"])
-
-    ### Change date format
-    dico = {"JAN":"01","FEB":"02","MAR":"03","APR":"04","MAY":"05","JUN":"06","JUL":"07","AUG":"08","SEP":"09","OCT":"10","NOV":"11","DEC":"12"}
-    for key in dico:
-        datas["DT_AWARD"] = datas["DT_AWARD"].replace(regex=key,value=dico[key])
-        datas["DT_DISPATCH"] = datas["DT_DISPATCH"].replace(regex=key,value=dico[key])
-        
-    awardDate = np.array(datas["DT_AWARD"])
-    dispatchDate = np.array(datas["DT_DISPATCH"])
-    for i in range(len(awardDate)):
-        if len(str(awardDate[i]))>4:
-            temp = awardDate[i].split("-")
-            awardDate[i] = "20"+temp[2]+"-"+temp[1]+"-"+temp[0]
-        if len(str(dispatchDate[i]))>4:
-            temp = dispatchDate[i].split("-")
-            dispatchDate[i] = "20"+temp[2]+"-"+temp[1]+"-"+temp[0]
-
     awardEstimatedPrice = np.array(datas["AWARD_EST_VALUE_EURO"])
     awardPrice = np.array(datas["AWARD_VALUE_EURO_FIN_1"])
     cpv = np.array(datas["CPV"])
@@ -119,8 +109,25 @@ def firstCleaning(datas,database):
     multipleCAE = np.array(datas["B_MULTIPLE_CAE"])
     typeofContract = np.array(datas["TYPE_OF_CONTRACT"])
     topType = np.array(datas["TOP_TYPE"])
-    cur = database.cursor()
 
+    ### Change date format
+    dico = {"JAN":"01","FEB":"02","MAR":"03","APR":"04","MAY":"05","JUN":"06","JUL":"07","AUG":"08","SEP":"09","OCT":"10","NOV":"11","DEC":"12"}
+    for key in dico:
+        datas["DT_AWARD"] = datas["DT_AWARD"].replace(regex=key,value=dico[key])
+        datas["DT_DISPATCH"] = datas["DT_DISPATCH"].replace(regex=key,value=dico[key])
+        
+    awardDate = np.array(datas["DT_AWARD"])
+    dispatchDate = np.array(datas["DT_DISPATCH"])
+    
+    for i in range(len(awardDate)):
+        if len(str(awardDate[i]))>4:
+            temp = awardDate[i].split("-")
+            awardDate[i] = "20"+temp[2]+"-"+temp[1]+"-"+temp[0]
+        if len(str(dispatchDate[i]))>4:
+            temp = dispatchDate[i].split("-")
+            dispatchDate[i] = "20"+temp[2]+"-"+temp[1]+"-"+temp[0]
+
+    cur = database.cursor()
     compteurAgent=0
     for i in range(len(datas)):
         sql = ''' INSERT INTO Lots(lotID,tedCANID,corrections,cancelled,awardDate,awardEstimatedPrice,awardPrice,CPV,tenderNumber,onBehalf,jointProcurement,fraAgreement,fraEstimated,lotsNumber,accelerated,outOfDirectives,contractorSME,numberTendersSME,subContracted,gpa,multipleCAE,typeOfContract,topType)
@@ -853,9 +860,16 @@ def siretization(database):
     return database
 
 def mergingAfterSiretization(database):
-
+    request = "SELECT * FROM AgentsSiretiser WHERE siret is not NULL"
+    #atas2 = datas.groupby(["name",'address','city','siret'],as_index=False).agg({'agentID':'-'.join,'name':'first','siret':'first','address':'first','city':'first','zipcode':'first','country':'first','date':'first','type':'first'})
     return database
+
+
+def deduping(database):
     
+def finalTableAgent(database):
+    
+def informationCompletion(database):
         
 
 ##### Main 
