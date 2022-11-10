@@ -399,9 +399,6 @@ def fineTuningAgents(database):
     for i in range(len(convertisseur)):
         temp = convertisseur["Nom"][i]
         datas.loc[datas["name"].str.contains(temp,regex=True,na=False),'catJuridique' ] = convertisseur["catJuridique"][i]
-
-    datas = datas.replace("NULL_IDENTIFIER","NULL")
-    
     import copy as cp
         #### Adresses
     datasetEntites=cp.deepcopy(datas)
@@ -467,6 +464,16 @@ def fineTuningAgents(database):
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'''
         val = (i,names[i],sirets[i],addresses[i],Newaddresses[i],citys[i],zipcodes[i],countrys[i],dates[i],catJuridique[i],ids[i],types[i])
         cursor.execute(sql,val)
+    request = "UPDATE AgentsSiretiser SET name = NULLIF(name,'NULL_IDENTIFIER')"
+    sql = cursor.execute(request)
+    request = "UPDATE AgentsSiretiser SET siret = NULLIF(siret,'NULL_IDENTIFIER')"
+    sql = cursor.execute(request)
+    request = "UPDATE AgentsSiretiser SET address = NULLIF(address,'NULL_IDENTIFIER')"
+    sql = cursor.execute(request)
+    request = "UPDATE AgentsSiretiser SET city = NULLIF(city,'NULL_IDENTIFIER')"
+    sql = cursor.execute(request)
+    request = "UPDATE AgentsSiretiser SET zipcode = NULLIF(zipcode,'NULL_IDENTIFIER')"
+    sql = cursor.execute(request)
     database.commit()
     return database
 
@@ -693,6 +700,7 @@ def siretization(database):
                 datas["CPSirene"][j] = gdf['cp'][0]
             else: 
                 print("Error : the Siret is incorrect. We will try to siretize")
+                datas["siret"][j]=""
         else:
             start = time.time()
             gdf2 = pd.DataFrame()
@@ -845,6 +853,7 @@ def siretization(database):
     return database
 
 def mergingAfterSiretization(database):
+
     return database
     
         
