@@ -9,14 +9,14 @@ import os
 import re
 import time
 from os import walk
-#from blazingsql import BlazingContext
+from blazingsql import BlazingContext
 from rapidfuzz import fuzz
 from rapidfuzz import process
 import logging
 import optparse
-
-#import dedupe
-#from unidecode import unidecode
+import dedupe
+from unidecode import unidecode
+import csv
 
 def databaseCreation(nameDatabase):
     """Creation of the tables of the database"""
@@ -1068,9 +1068,7 @@ datas = load_csv_files()
 db = firstCleaning(datas,db)
 db = mainCleaning(db)
 db = fineTuningAgents(db)
-#db = siretization(db)
-#datas = mergingAfterSiretization(db)
-#db = dedupe(datas,db)
+db = siretization(db)
+datas = mergingAfterSiretization(db)
+db = dedupe(datas,db)
 db = criteriaProcessing(db)
-#db = siretisationProcessing(db)
-
