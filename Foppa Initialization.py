@@ -17,6 +17,57 @@ import optparse
 import dedupe
 from unidecode import unidecode
 import csv
+import urllib.request
+import shutil
+import zipfile
+
+
+
+
+
+
+def downloadFiles():
+    """Download of the various files in the FOPPA database"""
+    os.mkdir("FoppaFiles")
+    os.mkdir("Hexapost")
+    os.mkdir("contractNotices")
+    os.mkdir("contractAwards")
+
+    urls = ["https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2010.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2011.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2012.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2013.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2014.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2015.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2016.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2017.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2018.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2019.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2020.zip",
+            ]
+    for url in urls:
+        urllib.request.urlretrieve(url,"Award.zip")
+        with zipfile.ZipFile("Award.zip", 'r') as zip_ref:
+            zip_ref.extractall("contractAwards")
+
+    urls = ["https://data.europa.eu/api/hub/store/data/ted-contract-notices-2008.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2009.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2010.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2011.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2012.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2013.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2014.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2015.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2016.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2017.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2018.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2019.zip",
+            "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2020.zip",
+            ]
+    for url in urls:
+        urllib.request.urlretrieve(url,"Award.zip")
+        with zipfile.ZipFile("Award.zip", 'r') as zip_ref:
+            zip_ref.extractall("contractNotices")
 
 def databaseCreation(nameDatabase):
     """Creation of the tables of the database"""
