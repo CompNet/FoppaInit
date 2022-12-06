@@ -1012,15 +1012,78 @@ def dedupe(database):
     
 def finalTableAgent(database):
     cursor = database.cursor()
-    datas = pd.read_sql_query("SELECT * FROM AgentsSiretiser", database,dtype=str) 
-    ids = np.array(datas["ids"]) 
-    types = np.array(datas["type"]) 
-    names = np.array(datas["name"]) 
-    sirets = np.array(datas["siret"])
-    addresses = np.array(datas["address"]) 
-    citys = np.array(datas["city"]) 
-    zipcodes = np.array(datas["zipcode"]) 
-    countrys = np.array(datas["country"]) 
+    clients = pd.read_sql_query("SELECT * FROM LotClients", database,dtype=str)
+    suppliers = pd.read_sql_query("SELECT * FROM LotSuppliers", database,dtype=str)  
+    datas = pd.read_csv("ResDeduper.csv",dtype=str,sep=";")
+    lenCluster = len(datas.groupby("ClusterID").count())
+    request = "DROP TABLE IF EXISTS Agents"
+    sql = cursor.execute(request)
+    request = "CREATE TABLE Agents(agentID INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, department TEXT,longitude TEXT, latitude TEXT,PRIMARY KEY(agentID))"
+    sql = cursor.execute(request)
+    request = "DROP TABLE IF EXISTS LotClients"
+    sql = cursor.execute(request)
+    request = "CREATE TABLE LotClients(lotID INTEGER,agentID INTEGER)"
+    sql = cursor.execute(request)
+    request = "DROP TABLE IF EXISTS LotSuppliers"
+    sql = cursor.execute(request)
+    request = "CREATE TABLE LotSuppliers(lotID INTEGER,agentID INTEGER)"
+    sql = cursor.execute(request)
+
+    dico = {}
+    ClusterIds = np.array(datas["ClusterID"])
+    agentsID = np.array(datas["ids"])
+    for j in range(len(agentsID)):
+        temp = str(agentsID[j]).split("-")
+        for k in range(len(temp)):
+            dico[int(temp[k])] = int(ClusterIds[j])
+
+    print("PASSAGE")  
+    clientsLot = np.array(clients["lotID"])
+    clientsAgent = np.array(clients["agentID"])
+    suppliersLot = np.array(suppliers["lotID"])
+    suppliersAgent = np.array(suppliers["agentID"])
+
+    for i in range(len(clientsLot)):
+        if i%50000==0:
+            print(i)
+        if (int(clientsAgent[i]) in dico):
+            sql = ''' INSERT INTO LotClients(lotID,agentID)
+                        VALUES (?,?)'''
+            val = (int(clientsLot[i]),int(dico[int(clientsAgent[i])]))
+            cursor.execute(sql,val)
+            
+    for i in range(len(suppliersLot)):
+        if (int(suppliersAgent[i]) in dico):
+            sql = ''' INSERT INTO LotSuppliers(lotID,agentID)
+                        VALUES (?,?)'''
+            val = (int(suppliersLot[i]),int(dico[int(suppliersAgent[i])]))
+            cursor.execute(sql,val)
+    
+    for j in range(lenCluster):   
+        if j%1000==0:
+            print(j) 
+        numero = str(j)
+        temp = datas[datas["ClusterID"]==numero]
+        temp = temp.reset_index()
+        ##Selection of the Agent. 
+        if len(temp)==1:
+            sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
+                        VALUES (?,?,?,?,?,?,?,?,?,?)'''
+            val = (j,temp["name"][0],temp["siret"][0],temp["address"][0],temp["city"][0],temp["zipcode"][0],temp["country"][0],0,None,None)
+            cursor.execute(sql,val)
+        else:
+            maxID = 0
+            maxScore=0
+            for candidat in range(len(temp)):
+                score = len(str(temp["ids"][candidat]).split('-'))+1000*math.floor(len(str(temp["siret"][candidat]))/12)
+                if score>maxScore:
+                    maxScore=score
+                    maxID=candidat
+            sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
+                        VALUES (?,?,?,?,?,?,?,?,?,?)'''
+            val = (j,temp["name"][candidat],temp["siret"][candidat],temp["address"][candidat],temp["city"][candidat],temp["zipcode"][candidat],temp["country"][candidat],0,None,None)
+            cursor.execute(sql,val)    
+    database.commit()
     
     ############
     #French special departement
@@ -1057,6 +1120,7 @@ def finalTableAgent(database):
     ###  
     database.commit()
     return database
+
     
 def informationCompletion(database):
     return database
