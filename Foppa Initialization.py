@@ -876,10 +876,6 @@ def mergingAfterSiretization(database):
 
 
 def preProcess(column):
-    """
-    Do a little bit of data cleaning with the help of Unidecode and Regex.
-    Things like casing, extra spaces, quotes and new lines can be ignored.
-    """
     column = unidecode(column)
     column = re.sub('  +', ' ', column)
     column = re.sub('\n', ' ', column)
@@ -891,10 +887,6 @@ def preProcess(column):
 
 
 def readData(filename):
-    """
-    Read in our data from a CSV file and create a dictionary of records,
-    where the key is a unique record ID and each value is dict
-    """
     row_id = 0
     data_d = {}
     with open(filename) as f:
@@ -911,7 +903,7 @@ def dedupe(database):
     datas = pd.read_sql_query("SELECT * FROM AgentsSiretiser", database,dtype=str) 
     datas.to_csv("ADeduper.csv")
     input_file = "ADeduper.csv"
-    output_file = 'FINDEDUPEUADe.csv'
+    output_file = 'ResDedupe.csv'
     settings_file = 'SettingsCAE101'
     training_file = 'TrainingCAE1201.json'
 
@@ -1081,40 +1073,75 @@ def finalTableAgent(database):
     database.commit()
     return database
 
-    def addSireneInfo(database):
-        dicoDepartement = {
-            "200":"2A",
-            "201":"2A",
-            "202":"2B",
-            "206":"2B",
-            "971":"971",
-            "972":"972",
-            "973":"973",
-            "974":"974",
-            "975":"975",
-            "976":"976",
-            "977":"977",
-            "978":"978",
-            "986":"986",
-            "987":"987",
-            "988":"988"}
-        departement = []     
-        for i in range(len(datas)):
-            ### Modif departement:
-            departement = dicoDepartement.get(zipcodes[i][0:3],zipcodes[i][0:2])
-            sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department)
-                    VALUES (?,?,?,?,?,?,?,?)'''
-            val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],departement)
-            oldNumbers = str(ids[i]).split("-")
-            for old in oldNumbers:
-                request ="UPDATE LotClients SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
-                sql = cursor.execute(request)
-                request ="UPDATE LotSuppliers SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
-                sql = cursor.execute(request)
-        
-        ###  
-        database.commit()
-        return database
+def addSireneInfo(database):
+    dicoDepartement = {
+        "200":"2A",
+        "201":"2A",
+        "202":"2B",
+        "206":"2B",
+        "971":"971",
+        "972":"972",
+        "973":"973",
+        "974":"974",
+        "975":"975",
+        "976":"976",
+        "977":"977",
+        "978":"978",
+        "986":"986",
+        "987":"987",
+        "988":"988"}
+    departement = []     
+    for i in range(len(datas)):
+        ### Modif departement:
+        departement = dicoDepartement.get(zipcodes[i][0:3],zipcodes[i][0:2])
+        sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department)
+                VALUES (?,?,?,?,?,?,?,?)'''
+        val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],departement)
+        oldNumbers = str(ids[i]).split("-")
+        for old in oldNumbers:
+            request ="UPDATE LotClients SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
+            sql = cursor.execute(request)
+            request ="UPDATE LotSuppliers SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
+            sql = cursor.execute(request)
+    
+    ###  
+    database.commit()
+    return database
+
+
+def contractNoticesCompletion(database):
+    cursor = database.cursor()
+    listeFichiers = []
+    newDF = []
+    for (repertoire, sousRepertoires, fichiers) in walk("../data/TedContractNotices/csv"):
+        listeFichiers.extend(fichiers)
+    for j in listeFichiers:
+        datas = pd.read_csv("../data/TedContractNotices/csv/"+j,dtype=str)
+        datas = datas[datas["ISO_COUNTRY_CODE"].str.contains("FR")]
+        newDF.append(datas[["ID_NOTICE_CN","FUTURE_CAN_ID","B_RENEWALS","DURATION","DT_DISPATCH","DT_APPLICATIONS"]])
+        print(newDF)
+    result = pd.concat(newDF)
+
+    result.assign(pubDur=0)
+    debut = np.array(result["DT_DISPATCH"])
+    fin = np.array(result["DT_APPLICATIONS"])
+    temp = len(debut)*[np.NAN]
+
+    print(debut)
+
+    dictionnaireMois= {"JAN":"01","FEB":"02","MAR":"03","APR":"04","MAY":"05","JUN":"06","JUL":"07","AUG":"08","SEP":"09","OCT":"10","NOV":"11","DEC":"12"}
+
+    for i in range(len(debut)):
+        if len(str(debut[i]))>4 and len(str(fin[i]))>4:
+            d = debut[i].split("-")
+            f = fin[i].split("-")
+            newd = d[2]+"-"+dictionnaireMois[d[1]]+"-"+d[0]
+            newf = f[2]+"-"+dictionnaireMois[f[1]]+"-"+f[0]
+            date1 = date(int(d[2]),int(dictionnaireMois[d[1]]),int(d[0]))
+            date2 = date(int(f[2]),int(dictionnaireMois[f[1]]),int(f[0]))
+            temp[i]=(date2-date1).days
+    result["pubDur"] = temp
+    result.to_csv("LotsDurationV2.csv",index=False)
 
     
 def informationCompletion(database):
