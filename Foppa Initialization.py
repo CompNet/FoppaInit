@@ -1036,16 +1036,13 @@ def finalTableAgent(database):
         temp = str(agentsID[j]).split("-")
         for k in range(len(temp)):
             dico[int(temp[k])] = int(ClusterIds[j])
-
-    print("PASSAGE")  
+            
     clientsLot = np.array(clients["lotID"])
     clientsAgent = np.array(clients["agentID"])
     suppliersLot = np.array(suppliers["lotID"])
     suppliersAgent = np.array(suppliers["agentID"])
 
     for i in range(len(clientsLot)):
-        if i%50000==0:
-            print(i)
         if (int(clientsAgent[i]) in dico):
             sql = ''' INSERT INTO LotClients(lotID,agentID)
                         VALUES (?,?)'''
@@ -1060,8 +1057,6 @@ def finalTableAgent(database):
             cursor.execute(sql,val)
     
     for j in range(lenCluster):   
-        if j%1000==0:
-            print(j) 
         numero = str(j)
         temp = datas[datas["ClusterID"]==numero]
         temp = temp.reset_index()
@@ -1084,42 +1079,42 @@ def finalTableAgent(database):
             val = (j,temp["name"][candidat],temp["siret"][candidat],temp["address"][candidat],temp["city"][candidat],temp["zipcode"][candidat],temp["country"][candidat],0,None,None)
             cursor.execute(sql,val)    
     database.commit()
-    
-    ############
-    #French special departement
-    dicoDepartement = {
-        "200":"2A",
-        "201":"2A",
-        "202":"2B",
-        "206":"2B",
-        "971":"971",
-        "972":"972",
-        "973":"973",
-        "974":"974",
-        "975":"975",
-        "976":"976",
-        "977":"977",
-        "978":"978",
-        "986":"986",
-        "987":"987",
-        "988":"988"}
-    departement = []     
-    for i in range(len(datas)):
-        ### Modif departement:
-        departement = dicoDepartement.get(zipcodes[i][0:3],zipcodes[i][0:2])
-        sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department)
-                VALUES (?,?,?,?,?,?,?,?)'''
-        val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],departement)
-        oldNumbers = str(ids[i]).split("-")
-        for old in oldNumbers:
-            request ="UPDATE LotClients SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
-            sql = cursor.execute(request)
-            request ="UPDATE LotSuppliers SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
-            sql = cursor.execute(request)
-    
-    ###  
-    database.commit()
     return database
+
+    def addSireneInfo(database):
+        dicoDepartement = {
+            "200":"2A",
+            "201":"2A",
+            "202":"2B",
+            "206":"2B",
+            "971":"971",
+            "972":"972",
+            "973":"973",
+            "974":"974",
+            "975":"975",
+            "976":"976",
+            "977":"977",
+            "978":"978",
+            "986":"986",
+            "987":"987",
+            "988":"988"}
+        departement = []     
+        for i in range(len(datas)):
+            ### Modif departement:
+            departement = dicoDepartement.get(zipcodes[i][0:3],zipcodes[i][0:2])
+            sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department)
+                    VALUES (?,?,?,?,?,?,?,?)'''
+            val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],departement)
+            oldNumbers = str(ids[i]).split("-")
+            for old in oldNumbers:
+                request ="UPDATE LotClients SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
+                sql = cursor.execute(request)
+                request ="UPDATE LotSuppliers SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
+                sql = cursor.execute(request)
+        
+        ###  
+        database.commit()
+        return database
 
     
 def informationCompletion(database):
