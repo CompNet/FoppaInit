@@ -33,4 +33,9 @@ Tested with `python` version 4.0.5, with the following packages:
 * [`blazingsql`](https://rapids.ai/start.html): version 1.13.0.
 * [`rapidfuzz`](https://pypi.org/project/rapidfuzz/): version 1.0.16.
 
+# Data
+The data is available at XXX In two different formats:
+* dump SQL 
+* csv files
+
 
