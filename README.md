@@ -40,7 +40,7 @@ Tested with `python` version 4.0.5, with the following packages:
 * [`sqlite3`]: version 1.0.5.
 * [`pandas`](https://pypi.org/project/pandas/): version 1.1.54.
 * [`numpy`](https://pypi.org/project/numpy/): version 2.1.0.
-* [`blazingsql`](https://rapids.ai/start.html): version 1.13.0.
+* [`blazingsql`](https://rapids.ai/start.html): version 21.08
 * [`rapidfuzz`](https://pypi.org/project/rapidfuzz/): version 1.0.16.
 
 # Data
