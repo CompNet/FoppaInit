@@ -36,7 +36,7 @@ In order to construct the Foppa database:
 
 
 # Dependencies
-Tested with `python` version 4.0.5, with the following packages:
+Tested with `python` version 3.8.0, with the following packages:
 * [`sqlite3`]: version 1.0.5.
 * [`pandas`](https://pypi.org/project/pandas/): version 1.1.54.
 * [`numpy`](https://pypi.org/project/numpy/): version 2.1.0.
