@@ -28,8 +28,6 @@ import zipfile
 
 def downloadFiles():
     """Download of the various files in the FOPPA database"""
-    os.mkdir("FoppaFiles")
-    os.mkdir("Hexapost")
     os.mkdir("contractNotices")
     os.mkdir("contractAwards")
 
@@ -68,6 +66,8 @@ def downloadFiles():
         urllib.request.urlretrieve(url,"Award.zip")
         with zipfile.ZipFile("Award.zip", 'r') as zip_ref:
             zip_ref.extractall("contractNotices")
+            
+    
 
 def databaseCreation(nameDatabase):
     """Creation of the tables of the database"""
