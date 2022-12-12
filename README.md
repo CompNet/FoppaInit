@@ -49,4 +49,7 @@ The data is available at XXX In two different formats:
 * dump SQL 
 * csv files
 
+## References
+[POTIN'22] L. Potin and V. Labatut and R. Figueiredo and C. Largeron and P. H. Morand, FOPPA: A database of French Open Public Procurement Award notices, 2022. ⟨hal-03796734⟩
+
 
