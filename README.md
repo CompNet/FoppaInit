@@ -12,10 +12,10 @@ Foppa is free software: you can redistribute it and/or modify it under the terms
  
 -------------------------------------------------------------------------
 
-## Description
+# Description
 These scripts are meant to create the Foppa database from raw TED files. Foppa contains the award notices of public contracts related to French clients from 2010 to 2020 in the Tenders Electronic Daily. Foppa proposes an enrichment of these data, thanks to the siretization of agents as well as the cleaning and extraction of award criteria.
 
-## Organization
+# Organization
 
 Here are the third-party softwares used in this version:
 * hexaposte : https://www.data.gouv.fr/fr/datasets/base-officielle-des-codes-postaux/
@@ -49,7 +49,7 @@ The data is available at XXX In two different formats:
 * dump SQL 
 * csv files
 
-## References
+# References
 [POTIN'22] L. Potin and V. Labatut and R. Figueiredo and C. Largeron and P. H. Morand, FOPPA: A database of French Open Public Procurement Award notices, 2022. ⟨hal-03796734⟩
 
 
