@@ -1056,7 +1056,8 @@ def dedupe(database):
 def finalTableAgent(database):
     cursor = database.cursor()
     clients = pd.read_sql_query("SELECT * FROM LotClients", database,dtype=str)
-    suppliers = pd.read_sql_query("SELECT * FROM LotSuppliers", database,dtype=str)  
+    suppliers = pd.read_sql_query("SELECT * FROM LotSuppliers", database,dtype=str)
+    names = pd.read_sql_query("SELECT * FROM Names", database,dtype=str)
     datas = pd.read_csv("ResDeduper.csv",dtype=str,sep=";")
     lenCluster = len(datas.groupby("ClusterID").count())
     request = "DROP TABLE IF EXISTS Agents"
@@ -1071,6 +1072,10 @@ def finalTableAgent(database):
     sql = cursor.execute(request)
     request = "CREATE TABLE LotSuppliers(lotID INTEGER,agentID INTEGER)"
     sql = cursor.execute(request)
+    request = "DROP TABLE IF EXISTS Names"
+    sql = cursor.execute(request)
+    request = "CREATE TABLE Names(agentID INTEGER,name TEXT)"
+    sql = cursor.execute(request)
 
     dico = {}
     ClusterIds = np.array(datas["ClusterID"])
@@ -1084,6 +1089,8 @@ def finalTableAgent(database):
     clientsAgent = np.array(clients["agentID"])
     suppliersLot = np.array(suppliers["lotID"])
     suppliersAgent = np.array(suppliers["agentID"])
+    namesID = np.array(names["agentID"])
+    namesAgent = np.array(names["name"]) 
 
     for i in range(len(clientsLot)):
         if (int(clientsAgent[i]) in dico):
@@ -1120,7 +1127,14 @@ def finalTableAgent(database):
             sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
                         VALUES (?,?,?,?,?,?,?,?,?,?)'''
             val = (j,temp["name"][candidat],temp["siret"][candidat],temp["address"][candidat],temp["city"][candidat],temp["zipcode"][candidat],temp["country"][candidat],0,None,None)
-            cursor.execute(sql,val)    
+            cursor.execute(sql,val)  
+    for i in range(len(namesID)):
+        if (int(namesID[i]) in dico):
+            sql = ''' INSERT INTO Names(agentID,name)
+                        VALUES (?,?)'''
+            val = (dico[int(namesID[i])],namesAgent[i])
+            cursor.execute(sql,val)
+
     database.commit()
     return database
 
