@@ -20,6 +20,7 @@ These scripts are meant to create the Foppa database from raw TED files. Foppa c
 Here are the third-party softwares used in this version:
 * hexaposte : https://www.data.gouv.fr/fr/datasets/base-officielle-des-codes-postaux/
 * SIRENE : https://www.data.gouv.fr/fr/datasets/base-sirene-des-entreprises-et-de-leurs-etablissements-siren-siret/
+* GeoSIRENE : https://www.data.gouv.fr/fr/datasets/geolocalisation-des-etablissements-du-repertoire-sirene-pour-les-etudes-statistiques/
 
 # Installations
 You first need to install `python` and the required packages:
