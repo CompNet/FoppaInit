@@ -123,7 +123,6 @@ def load_csv_files():
 
 def firstCleaning(datas,database):
     columns = datas.columns
-    
     # First cleaning : Normalize + Upper strings
     for column in columns:
         datas[column] = datas[column].str.upper()
@@ -686,8 +685,8 @@ def siretization(database):
     cwd = os.getcwd()
     data_path = cwd+'/data/Ouvertures/*.csv'
     d_p = cwd+'/data/Etab/*.csv'
-    d_s =cwd +'/data/foppaFiles/Sigles2.csv'
-    data_path_noms =cwd +'/data/foppaFiles/ChangementsNoms2.csv'
+    d_s =cwd +'/data/foppaFiles/Sigles.csv'
+    data_path_noms =cwd +'/data/foppaFiles/ChangementsNoms.csv'
 
     bc = BlazingContext()
     col_types = ["str","str","str","str","str","str","str","str","str","str","str","str"]
@@ -950,13 +949,13 @@ def readData(filename):
     return data_d
 
 
-def dedupe(database):
+def dedupeAgent(database):
     datas = pd.read_sql_query("SELECT * FROM AgentsSiretiser", database,dtype=str) 
     datas.to_csv("ADeduper.csv")
     input_file = "ADeduper.csv"
     output_file = 'ResDedupe.csv'
-    settings_file = 'SettingsCAE101'
-    training_file = 'TrainingCAE1201.json'
+    settings_file = 'data/SettingsDedupe'
+    training_file = 'data/TrainingDedupe.json'
 
     print('importing data ...')
     data_d = readData(input_file)
@@ -1214,12 +1213,33 @@ def informationCompletion(database):
         
 
 ##### Main 
+
+# Creation of the database
 db = databaseCreation("FoppaTEST.db")
+
+# Load each csv files of data europa
 datas = load_csv_files()
+
+# First cleaning and filling of the database
 db = firstCleaning(datas,db)
+
+# Second processing
 db = mainCleaning(db)
+
+#Normalization
 db = fineTuningAgents(db)
-db = siretization(db)
-datas = mergingAfterSiretization(db)
-db = dedupe(datas,db)
+
+# Criteria processing 
 db = criteriaProcessing(db)
+
+# Siretization step
+#db = siretization(db)
+
+# Update of the database according to the siretization
+datas = mergingAfterSiretization(db)
+
+# Dedupe step
+db = dedupeAgent(datas,db)
+
+# Update of the database according to Dedupe
+db = finalTableAgent(db)
