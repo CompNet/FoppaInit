@@ -37,11 +37,12 @@ In order to construct the Foppa database:
 
 # Dependencies
 Tested with `python` version 3.8.0, with the following packages:
-* [`sqlite3`]: version 1.0.5.
-* [`pandas`](https://pypi.org/project/pandas/): version 1.1.54.
-* [`numpy`](https://pypi.org/project/numpy/): version 2.1.0.
-* [`blazingsql`](https://rapids.ai/start.html): version 21.08
-* [`rapidfuzz`](https://pypi.org/project/rapidfuzz/): version 1.0.16.
+* [`sqlite3`]
+* [`pandas`](https://pypi.org/project/pandas/): version 1.3.5.
+* [`numpy`](https://pypi.org/project/numpy/): version 1.22.4.
+* [`blazingsql`](https://rapids.ai/start.html): version 21.08.
+* [`rapidfuzz`](https://pypi.org/project/rapidfuzz/): version 2.11.1.
+* [`dedupe`](https://pypi.org/project/dedupe/): version 2.0.19.
 
 # Data
 The data is available at XXX In two different formats:
