@@ -1,6 +1,7 @@
 ## Foppa Initialization
 
-import date
+#import date
+import math
 import json
 import sqlite3
 import pandas as pd
@@ -9,7 +10,8 @@ import os
 import re
 import time
 from os import walk
-from blazingsql import BlazingContext
+from datetime import date
+#from blazingsql import BlazingContext
 from rapidfuzz import fuzz
 from rapidfuzz import process
 import logging
@@ -28,9 +30,14 @@ import zipfile
 
 def downloadFiles():
     """Download of the various files in the FOPPA database"""
-    os.mkdir("contractNotices")
-    os.mkdir("contractAwards")
-
+    os.mkdir("data/contractNotices")  #Contract notices from TED
+    os.mkdir("data/contractAwards")   #Contract award from TED
+    os.mkdir("data/opening")          #Opening dates from SIRENE
+    os.mkdir("data/Etab")             #All facilities from SIRENE
+    os.mkdir("data/geolocate")        #For localisation of SIRENE entities
+    
+    
+    #### Contract award
     urls = ["https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2010.zip",
             "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2011.zip",
             "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2012.zip",
@@ -46,8 +53,9 @@ def downloadFiles():
     for url in urls:
         urllib.request.urlretrieve(url,"Award.zip")
         with zipfile.ZipFile("Award.zip", 'r') as zip_ref:
-            zip_ref.extractall("contractAwards")
-
+            zip_ref.extractall("data/contractAwards")
+    
+    #### Contract Notices
     urls = ["https://data.europa.eu/api/hub/store/data/ted-contract-notices-2008.zip",
             "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2009.zip",
             "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2010.zip",
@@ -63,9 +71,146 @@ def downloadFiles():
             "https://data.europa.eu/api/hub/store/data/ted-contract-notices-2020.zip",
             ]
     for url in urls:
-        urllib.request.urlretrieve(url,"Award.zip")
-        with zipfile.ZipFile("Award.zip", 'r') as zip_ref:
+        urllib.request.urlretrieve(url,"Contract.zip")
+        with zipfile.ZipFile("Contract.zip", 'r') as zip_ref:
             zip_ref.extractall("contractNotices")
+            
+    os.remove("Contract.csv")
+    os.remove("Award.csv")
+    ######SIRENE:
+    
+    #Opening Dates
+    urls = ["https://files.data.gouv.fr/insee-sirene/StockEtablissementHistorique_utf8.zip"]
+    for url in urls:
+        urllib.request.urlretrieve(url,"HistoEtab.zip")
+        with zipfile.ZipFile("HistoEtab.zip", 'r') as zip_ref:
+            zip_ref.extractall("data/opening")
+            
+    chunksize = 10 ** 6
+    compteur=0
+    with pd.read_csv("data/opening/StockEtablissementHistorique_utf8.csv", chunksize=chunksize,dtype="str") as reader:
+        for chunk in reader:
+            chunk = chunk[["siret","dateDebut","dateFin"]]
+            name = "data/opening/HistoPart"+str(compteur)+".csv"
+            print(name)
+            datefin = np.array(chunk["dateFin"])
+            for j in range(len(datefin)):
+                if len(str(datefin[j]))<4:
+                    datefin[j]="2030-01-01"
+            chunk["dateFin"]=datefin
+            chunk.to_csv(name,index=False)   
+            compteur=compteur+1 
+    os.remove("data/opening/StockEtablissementHistorique_utf8.csv")
+    os.remove("HistoEtab.csv")
+    
+    #Facilities 
+    
+    urls = ["https://files.data.gouv.fr/insee-sirene/StockEtablissement_utf8.zip",
+    "https://files.data.gouv.fr/insee-sirene/StockUniteLegale_utf8.zip"]
+    for url in urls:
+        urllib.request.urlretrieve(url,"Sirene.zip")
+        with zipfile.ZipFile("Sirene.zip", 'r') as zip_ref:
+            zip_ref.extractall("data/Etab")
+    
+    os.remove("Sirene.csv")
+    chunksize = 10 ** 6
+    compteur=0    
+    allCol = ["siret","siren","nomEnseigne","nomUnite","num","typevoie","libelle","cp","ville","TypeActivite","CatJuridique"]
+    chunksize = 10 ** 6
+    newDF = pd.DataFrame(index=range(0,chunksize),columns=allCol)
+    diconom = {}
+    dicotype = {}
+    filename = "data/Etab/StockUniteLegale_utf8.csv"
+    chunksize = 10 ** 6
+    compt=-1
+    for chunk in pd.read_csv(filename, chunksize=chunksize,dtype = str):
+        if compt<1:
+            print("Passage")
+            compt=compt+1
+            for l in range(len(chunk)):
+                    if not(str(chunk["denominationUniteLegale"][chunksize*compt+l]) == "nan"):
+                            temp = str(chunk["denominationUniteLegale"][chunksize*compt+l])
+                    elif not(str(chunk["denominationUsuelle1UniteLegale"][chunksize*compt+l]) == "nan"):
+                            temp = str(chunk["denominationUsuelle1UniteLegale"][chunksize*compt+l])
+                    elif not(str(chunk["denominationUsuelle2UniteLegale"][chunksize*compt+l]) == "nan"):
+                            temp = str(chunk["denominationUsuelle2UniteLegale"][chunksize*compt+l])
+                    elif not(str(chunk["denominationUsuelle3UniteLegale"][chunksize*compt+l]) == "nan"):
+                            temp = str(chunk["denominationUsuelle3UniteLegale"][chunksize*compt+l])
+                    else:
+                            temp = str(chunk["prenom1UniteLegale"][chunksize*compt+l]) + " " + str(chunk["nomUniteLegale"][chunksize*compt+l])
+                    diconom[str(chunk["siren"][chunksize*compt+l])] = temp
+                    dicotype[str(chunk["siren"][chunksize*compt+l])] = str(chunk["categorieJuridiqueUniteLegale"][chunksize*compt+l])
+    numeroFichier=0
+    
+    
+    os.remove("data/opening/StockUniteLegale_utf8.csv")
+    
+    
+    filename = "data/Etab/StockEtablissement_utf8.csv"
+    chunksize = 10 ** 6
+    compt=-1
+    for chunk in pd.read_csv(filename, chunksize=chunksize,dtype = str):
+        a=0
+        print("passage")
+        # Insert a row of data
+        compt=compt+1
+        for l in range(len(chunk)):
+            siren = str(chunk["siren"][chunksize*compt+l])
+            siret = str(chunk["siret"][chunksize*compt+l])
+            num = str(chunk["numeroVoieEtablissement"][chunksize*compt+l])
+            typevoie = str(chunk["typeVoieEtablissement"][chunksize*compt+l])
+            libelle = str(chunk["libelleVoieEtablissement"][chunksize*compt+l])
+            cp = str(chunk["codePostalEtablissement"][chunksize*compt+l])
+            ville = str(chunk["libelleCommuneEtablissement"][chunksize*compt+l])
+            e1=  str(chunk["enseigne1Etablissement"][chunksize*compt+l])
+            denom=  str(chunk["denominationUsuelleEtablissement"][chunksize*compt+l])
+            e2=  str(chunk["enseigne2Etablissement"][chunksize*compt+l])
+            e3=  str(chunk["enseigne3Etablissement"][chunksize*compt+l])
+            nom = diconom.get(siren,"0")
+            typ = dicotype.get(siren,"0")
+            activite = str(chunk["activitePrincipaleEtablissement"][chunksize*compt+l])
+            if not(e1=="nan"):
+                nome = e1
+            elif not(denom=="nan"):
+                nome = denom
+            elif not(e2=="nan"):
+                nome = e2
+            elif not(e3=="nan"):
+                nome = e3
+            else:
+                nome = nom
+            params = (siret,siren,nome,nom,num,typevoie,libelle,cp,ville,activite,typ)
+            newDF.iloc[a] = params
+            a = a+1
+            del siren,siret,num,typevoie,libelle,cp,ville,nom,nome,e1,denom,e2,e3
+        newDF["ville"] = newDF["ville"].replace(regex=r"[0-9]+",value=r"")
+        newDF["ville"] = newDF["ville"].replace(regex=r"CEDEX",value=r"")
+        newDF["ville"] = newDF["ville"].replace(regex=r"-",value=r" ")
+        newDF["ville"] = newDF["ville"].replace(regex=r"'",value=r" ")
+        newDF["ville"] = newDF["ville"].str.lstrip()
+        newDF["ville"] = newDF["ville"].str.rstrip()
+        nomFD = "data/Etab/EtabPart"+str(numeroFichier)+".csv"
+        newDF.to_csv(nomFD,index=False)
+        numeroFichier = numeroFichier+1
+        newDF = pd.DataFrame(index=range(0,chunksize),columns=allCol)
+
+    os.remove("data/opening/StockEtablissement_utf8.csv")
+    datas = pd.read_csv("data/Etab/EtabPart0.csv",dtype=str)
+
+    for l in range(len(datas)):
+        if datas["nomEnseigne"][l] == "MAIRIE":
+            temp = datas["ville"][l]
+            temp = "MAIRIE DE "+datas["ville"][l]
+            datas["nomEnseigne"][l] = temp
+    datas.to_csv("data/Etab/EtabPart0.csv",index=False)
+    
+    #Geolocalisation 
+    urls = ["https://files.data.gouv.fr/insee-sirene-geo/GeolocalisationEtablissement_Sirene_pour_etudes_statistiques_utf8.zip"]
+    for url in urls:
+        urllib.request.urlretrieve(url,"Sirene.zip")
+        with zipfile.ZipFile("Sirene.zip", 'r') as zip_ref:
+            zip_ref.extractall("data/geolocate")
+    
             
     
 
@@ -87,7 +232,7 @@ def databaseCreation(nameDatabase):
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS CriteriaTemp"
     sql = cursor.execute(request)
-    request = "CREATE TABLE CriteriaTemp (CRIT_PRICE_WEIGHT TEXT,CRIT_WEIGHTS TEXT, CRIT_CRITERIA TEXT)"
+    request = "CREATE TABLE CriteriaTemp (lotID INTEGER,CRIT_PRICE_WEIGHT TEXT,CRIT_WEIGHTS TEXT, CRIT_CRITERIA TEXT)"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS Lots"
     sql = cursor.execute(request)
@@ -103,7 +248,7 @@ def databaseCreation(nameDatabase):
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS Names"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Names(agentID INTEGER,name TEXT)"
+    request = "CREATE TABLE Names(agentID INTEGER,name TEXT,ids TEXT)"
     sql = cursor.execute(request)
     database.commit()
     return database
@@ -112,16 +257,17 @@ def load_csv_files():
     """Extraction of the csv files into the database"""
     listeFichiers = []
     newDF = []
-    for (repertoire, sousRepertoires, fichiers) in walk("../data/TedAwardNotices/csv"):
+    for (repertoire, sousRepertoires, fichiers) in walk("data/contractAwards"):
         listeFichiers.extend(fichiers)
     for j in listeFichiers:
-        datas = pd.read_csv("../data/TedAwardNotices/csv/"+j,dtype=str)
+        datas = pd.read_csv("data/contractAwards/"+j,dtype=str)
         # We only keep french contracts
         newDF.append(datas[datas["ISO_COUNTRY_CODE"].str.contains("FR")])
     result = pd.concat(newDF)
     return result
 
 def firstCleaning(datas,database):
+    datas = datas.loc[0:100]
     columns = datas.columns
     # First cleaning : Normalize + Upper strings
     for column in columns:
@@ -164,6 +310,9 @@ def firstCleaning(datas,database):
     multipleCAE = np.array(datas["B_MULTIPLE_CAE"])
     typeofContract = np.array(datas["TYPE_OF_CONTRACT"])
     topType = np.array(datas["TOP_TYPE"])
+    criteria = np.array(datas["CRIT_CRITERIA"])
+    criteriaW = np.array(datas["CRIT_WEIGHTS"])
+    criteriaP = np.array(datas["CRIT_PRICE_WEIGHT"])
 
     ### Change date format
     dico = {"JAN":"01","FEB":"02","MAR":"03","APR":"04","MAY":"05","JUN":"06","JUL":"07","AUG":"08","SEP":"09","OCT":"10","NOV":"11","DEC":"12"}
@@ -185,6 +334,11 @@ def firstCleaning(datas,database):
     cur = database.cursor()
     compteurAgent=0
     for i in range(len(datas)):
+        sql = ''' INSERT INTO CriteriaTemp(lotID,CRIT_PRICE_WEIGHT,CRIT_WEIGHTS, CRIT_CRITERIA)
+                  VALUES (?,?,?,?) '''
+        val =(i,criteriaP[i],criteriaW[i],criteria[i])
+        cur.execute(sql,val)
+        
         sql = ''' INSERT INTO Lots(lotID,tedCANID,corrections,cancelled,awardDate,awardEstimatedPrice,awardPrice,CPV,tenderNumber,onBehalf,jointProcurement,fraAgreement,fraEstimated,lotsNumber,accelerated,outOfDirectives,contractorSME,numberTendersSME,subContracted,gpa,multipleCAE,typeOfContract,topType)
                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) '''
         val = (i,tedCANID[i],corrections[i],cancelled[i],awardDate[i],awardEstimatedPrice[i],awardPrice[i],cpv[i],tenderNumber[i],onBehalf[i],jointProcurement[i],fraAgreement[i],fraEstimated[i],lotsNumber[i],accelerated[i],outOfDirectives[i],contractorSME[i],numbersTendersSME[i],subContracted[i],gpa[i],multipleCAE[i],typeofContract[i],topType[i])
@@ -227,6 +381,9 @@ def firstCleaning(datas,database):
                 tempPC = pcs[k]
             if not(countrys==None) and k<len(countrys):
                 tempCountry = countrys[k]
+            if compteurAgent==0:
+                #@Lucas FLAG
+                tempSiret="12345678912345"
             sql = ''' INSERT INTO AgentsBase(agentID,name,siret,address,city,zipcode,country,date,type)
                 VALUES (?,?,?,?,?,?,?,?,?)'''
             val = (compteurAgent,tempName,tempSiret,tempAddress,tempTown,tempPC,tempCountry,date,"CAE")
@@ -323,6 +480,7 @@ def mainCleaning(database):
         if not(len(str(sirets[i]))==14):
             sirets[i]="NULL_IDENTIFIER"
     datas["siret"]=sirets
+    
 
     #Nettoyage de l'adresse
     datas["address"] = datas["address"].replace(regex=r"&APOS;",value=r" ")
@@ -348,6 +506,8 @@ def mainCleaning(database):
         datas["city"]=datas["city"].replace(regex=key,value=replaceVille[key])
     datas["city"] = datas["city"].str.lstrip()
     datas["city"] = datas["city"].str.rstrip()
+    datas["city"] = datas["city"].replace(regex=r")",value=r"")
+    datas["city"] = datas["city"].replace(regex=r"(",value=r"")
 
     #Nettoyage du code Postal
     datas["zipcode"]=datas["zipcode"].replace(regex='[^\d]+',value="")
@@ -409,7 +569,7 @@ def fineTuningAgents(database):
 
     ### 2 : Hexaposte : 
     pcs = np.array(datas["zipcode"])
-    hexaposte = pd.read_csv("../data/hexaPoste/hexaposte.csv",dtype=str,sep=";")
+    hexaposte = pd.read_csv("data/foppaFiles/hexaposte.csv",dtype=str,sep=";")
     hexaposte["libelle_d_acheminement"] = hexaposte["libelle_d_acheminement"].str.replace("-"," ")
 
 
@@ -456,7 +616,7 @@ def fineTuningAgents(database):
     datas["name"] = datas["name"].replace(regex=r"^CAF SA ",value=r" CAF SA ")
     datas["name"] = datas["name"].replace(regex=r"^CAF FRANCE ",value=r" CAF FRANCE")
     datas["name"] = datas["name"].replace(regex=r"^CAF ",value=r"CAISSE D ALLOCATION FAMILIALES ")
-    convertisseur = pd.read_csv("../data/foppaFiles/CatJuridique.csv",dtype=str,sep=";")
+    convertisseur = pd.read_csv("data/foppaFiles/CatJuridique.csv",dtype=str,sep=";")
     datas = datas.assign(catJuridique=None)
     for i in range(len(convertisseur)):
         temp = convertisseur["Nom"][i]
@@ -464,7 +624,7 @@ def fineTuningAgents(database):
     import copy as cp
         #### Adresses
     datasetEntites=cp.deepcopy(datas)
-    libellesConvert = pd.read_csv("Libelle.csv",dtype=str)
+    libellesConvert = pd.read_csv("data/foppaFiles/Libelle.csv",dtype=str)
     for k in range(len(libellesConvert)): ##Transformation des types (Avenue--Av)
             Seekingpattern = " "+str(libellesConvert["Nom_Voie"][k]) + " "
             Appliedpattern = " "+str(libellesConvert["Nom_Voie_Nomalise"][k]) + " "
@@ -536,6 +696,16 @@ def fineTuningAgents(database):
     sql = cursor.execute(request)
     request = "UPDATE AgentsSiretiser SET zipcode = NULLIF(zipcode,'NULL_IDENTIFIER')"
     sql = cursor.execute(request)
+    request = "UPDATE AgentsSiretiser SET name = NULLIF(name,'None')"
+    sql = cursor.execute(request)
+    request = "UPDATE AgentsSiretiser SET siret = NULLIF(siret,'None')"
+    sql = cursor.execute(request)
+    request = "UPDATE AgentsSiretiser SET address = NULLIF(address,'None')"
+    sql = cursor.execute(request)
+    request = "UPDATE AgentsSiretiser SET city = NULLIF(city,'None')"
+    sql = cursor.execute(request)
+    request = "UPDATE AgentsSiretiser SET zipcode = NULLIF(zipcode,'None')"
+    sql = cursor.execute(request)
     database.commit()
     return database
 
@@ -549,40 +719,64 @@ def safe_cast(val, to_type, default=None):
     
 def findType(chaine):
     lchaine = str.upper(chaine)
+    lchaine = unidecode(lchaine)
+    if "ENVIRONNEMENT" in lchaine:
+        if "SOCIA" in lchaine:
+            return("MIXTE")
     if "TECHNIQUE" in lchaine:
         return("TECHNIQUE")
     if "TEHNIQUE" in lchaine:
         return("TECHNIQUE")
     if "PRIX" in lchaine:
-        return("PRIX")
+        return("PRICE")
     if "DELAI" in lchaine:
-        return("DELAI")
+        return("DELAY")
     if "ENVIRONNEMENT" in lchaine:
-        return("ENVIRONNEMENT")
+        return("ENVIRONNEMENTAL")
     if "REMISE" in lchaine:
-        return("PRIX")
+        return("PRICE")
     if "MONTANT" in lchaine:
-        return("PRIX")
+        return("PRICE")
     if "ECONOMIQUE" in lchaine:
-        return("PRIX")
+        return("PRICE")
     if "DURABLE" in lchaine:
-        return("ENVIRONNEMENT")
+        return("ENVIRONNEMENTAL")
     if "COUT" in lchaine:
-        return("PRIX") 
+        return("PRICE") 
     if "TARIF" in lchaine:
-        return("PRIX")
+        return("PRICE")
     if "FINANCIER" in lchaine:
-        return("PRIX")
+        return("PRICE")
     if "SOCIAL" in lchaine:
         return("SOCIAL")
-    return("AUTRES")
+    if "QUALITE" in lchaine:
+        return("TECHNIQUE")
+    if "QUALITATI" in lchaine:
+        return("TECHNIQUE")
+    if "HUMAIN" in lchaine:
+        return("SOCIAL")
+    if "PERSONNEL" in lchaine:
+        return("SOCIAL")
+    if "FONCTIONNALITE" in lchaine:
+        return("TECHNIQUE")
+    return("OTHER")
+
 
 
 def criteriaProcessing(database):
+    tripleDash=0
+    hyphens=0
+    noC=0
+    priceWithOther=0
+    notWeighted=0
+    ValueswithName=0
+    totx=0
+    manyLots=0
+    critid=0
     cursor = database.cursor()
     request = "DROP TABLE IF EXISTS Criteria"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Criteria (critereID INTEGER,lotID INTEGER,name TEXT,weight INTEGER,type TEXT,Total INTEGER,PRIMARY KEY(critereID),FOREIGN KEY(lotID) REFERENCES Lots(lotID) ON UPDATE CASCADE)"
+    request = "CREATE TABLE Criteria (critereID INTEGER,lotID INTEGER,name TEXT,weight INTEGER,type TEXT,PRIMARY KEY(critereID),FOREIGN KEY(lotID) REFERENCES Lots(lotID) ON UPDATE CASCADE)"
     sql = cursor.execute(request)
     datas = pd.read_sql_query("SELECT * FROM CriteriaTemp", database,dtype=str) 
     datas["CRIT_PRICE_WEIGHT"] =datas["CRIT_PRICE_WEIGHT"].str.replace("-","",regex=True)
@@ -613,7 +807,7 @@ def criteriaProcessing(database):
             if not(temp==None):
                 totx=totx+temp
             if not(temp==None):
-                listecrit.append(("PRIX",temp,"PRIX"))
+                listecrit.append(("PRIX",temp,"PRICE"))
                 somme=temp+somme
         if len(str(weights))>0 and not(str(weights)=="nan"):
             critsW = str(weights).split("&")
@@ -630,7 +824,7 @@ def criteriaProcessing(database):
                     if temp==0.0:
                         temp = 1/min(len(critsW),len(critsN))
                     listecrit.append((critsN[z],temp,findType(critsN[z])))
-                    if findType(critsN[z])=="PRIX":
+                    if findType(critsN[z])=="PRICE":
                         priceWithOther=priceWithOther+1
                     somme=temp+somme
         elif len(str(criteria))>3:
@@ -654,19 +848,35 @@ def criteriaProcessing(database):
                     poids= 1/len(temp)
                 somme = somme+poids
                 listecrit.append((critere,poids,findType(critere)))
-                if findType(critsN[z])=="PRIX":
+                if findType(critsN[z])=="PRICE":
                         priceWithOther=priceWithOther+1
         if not(float(totx)==float(100)):
             notWeighted=notWeighted+1
         if len(listecrit)==1:
-            cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?,?)",
-            (critid,i,listecrit[0][0],100,listecrit[0][2],totx))
+            if listecrit[0][2]=="MIXTE":
+                cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?)",
+                (critid,i,listecrit[0][0],50,"ENVIRONNEMENTAL"))
+                critid = critid+1
+                cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?)",
+                (critid,i,listecrit[0][0],50,"SOCIAL"))
+                critid = critid+1
+            else:
+                cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?)",
+                (critid,i,listecrit[0][0],100,listecrit[0][2]))
+                critid = critid+1
         elif len(listecrit)>1:
             for j in range(len(listecrit)):
-                cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?,?)",
-                (critid,i,listecrit[j][0],100*listecrit[j][1]/somme,listecrit[j][2],totx))
-                critid = critid+1
-    cursor.execute("DROP TABLE CriteriaTemp")
+                if listecrit[j][2]=="MIXTE":
+                    cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?)",
+                    (critid,i,listecrit[j][0],50*listecrit[j][1]/somme,"ENVIRONNEMENTAL"))
+                    critid = critid+1
+                    cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?)",
+                    (critid,i,listecrit[j][0],50*listecrit[j][1]/somme,"SOCIAL"))
+                    critid = critid+1
+                else:
+                    cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?)",
+                    (critid,i,listecrit[j][0],100*listecrit[j][1]/somme,listecrit[j][2]))
+                    critid = critid+1
     database.commit()
     return database
 
@@ -917,7 +1127,7 @@ def siretization(database):
 def mergingAfterSiretization(database):
     datas1 = pd.read_sql_query("SELECT * FROM AgentsSiretiser WHERE siret is NULL", database,dtype=str) 
     datas2 = pd.read_sql_query("SELECT * FROM AgentsSiretiser WHERE siret is not NULL", database,dtype=str)
-    datas2 = datas.groupby(['siret'],as_index=False).agg({'agentID':'-'.join,'name':'first','siret':'first','address':'first','city':'first','zipcode':'first','country':'first','date':'first','type':'first'}) 
+    datas2 = datas2.groupby(['siret'],as_index=False).agg({'ids':'-'.join,'name':'first','siret':'first','address':'first','city':'first','zipcode':'first','country':'first','date':'first','type':'first'}) 
     newDF = pd.concat([datas1,datas2])
     return newDF
 
@@ -949,9 +1159,8 @@ def readData(filename):
     return data_d
 
 
-def dedupeAgent(database):
-    datas = pd.read_sql_query("SELECT * FROM AgentsSiretiser", database,dtype=str) 
-    datas.to_csv("ADeduper.csv")
+def dedupeAgent(datas,database):
+    datas.to_csv("ADeduper.csv",index=False)
     input_file = "ADeduper.csv"
     output_file = 'ResDedupe.csv'
     settings_file = 'data/SettingsDedupe'
@@ -970,10 +1179,10 @@ def dedupeAgent(database):
 
         # Define the fields dedupe will pay attention to
         fields = [
-            {'field': 'CAE_NAME', 'type': 'String'},
-            {'field': 'CAE_ADDRESS', 'type': 'String', 'has missing': True},
-            {'field': 'CAE_TOWN', 'type': 'String', 'has missing': True},
-            {'field': 'CAE_POSTAL_CODE', 'type': 'String', 'has missing': True},
+            {'field': 'name', 'type': 'String'},
+            {'field': 'address', 'type': 'String', 'has missing': True},
+            {'field': 'city', 'type': 'String', 'has missing': True},
+            {'field': 'zipcode', 'type': 'String', 'has missing': True},
             ]
 
         # Create a new deduper object and pass our data model to it.
@@ -1036,11 +1245,10 @@ def dedupeAgent(database):
                 "confidence_score": score
             }
 
-    with open(output_file, 'w') as f_output, open(input_file) as f_input:
+    with open(output_file, 'w',newline='') as f_output, open(input_file) as f_input:
 
         reader = csv.DictReader(f_input)
         fieldnames = ['Cluster ID', 'confidence_score'] + reader.fieldnames
-
         writer = csv.DictWriter(f_output, fieldnames=fieldnames)
         writer.writeheader()
         compt=0
@@ -1048,6 +1256,7 @@ def dedupeAgent(database):
             row.update(cluster_membership[compt])
             compt = compt+1
             writer.writerow(row)
+            print(writer)
     
     
     return database
@@ -1057,8 +1266,8 @@ def finalTableAgent(database):
     clients = pd.read_sql_query("SELECT * FROM LotClients", database,dtype=str)
     suppliers = pd.read_sql_query("SELECT * FROM LotSuppliers", database,dtype=str)
     names = pd.read_sql_query("SELECT * FROM Names", database,dtype=str)
-    datas = pd.read_csv("ResDeduper.csv",dtype=str,sep=";")
-    lenCluster = len(datas.groupby("ClusterID").count())
+    datas = pd.read_csv("ResDedupe.csv",dtype=str,sep=",")
+    lenCluster = len(datas.groupby("Cluster ID").count())
     request = "DROP TABLE IF EXISTS Agents"
     sql = cursor.execute(request)
     request = "CREATE TABLE Agents(agentID INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, department TEXT,longitude TEXT, latitude TEXT,PRIMARY KEY(agentID))"
@@ -1077,10 +1286,11 @@ def finalTableAgent(database):
     sql = cursor.execute(request)
 
     dico = {}
-    ClusterIds = np.array(datas["ClusterID"])
+    ClusterIds = np.array(datas["Cluster ID"])
     agentsID = np.array(datas["ids"])
     for j in range(len(agentsID)):
         temp = str(agentsID[j]).split("-")
+        print(temp)
         for k in range(len(temp)):
             dico[int(temp[k])] = int(ClusterIds[j])
             
@@ -1093,25 +1303,25 @@ def finalTableAgent(database):
 
     for i in range(len(clientsLot)):
         if (int(clientsAgent[i]) in dico):
-            sql = ''' INSERT INTO LotClients(lotID,agentID)
+            sql = ''' INSERT OR IGNORE INTO LotClients(lotID,agentID)
                         VALUES (?,?)'''
             val = (int(clientsLot[i]),int(dico[int(clientsAgent[i])]))
             cursor.execute(sql,val)
             
     for i in range(len(suppliersLot)):
         if (int(suppliersAgent[i]) in dico):
-            sql = ''' INSERT INTO LotSuppliers(lotID,agentID)
+            sql = ''' INSERT OR IGNORE INTO LotSuppliers(lotID,agentID)
                         VALUES (?,?)'''
             val = (int(suppliersLot[i]),int(dico[int(suppliersAgent[i])]))
             cursor.execute(sql,val)
     
     for j in range(lenCluster):   
         numero = str(j)
-        temp = datas[datas["ClusterID"]==numero]
+        temp = datas[datas["Cluster ID"]==numero]
         temp = temp.reset_index()
         ##Selection of the Agent. 
         if len(temp)==1:
-            sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
+            sql = ''' INSERT OR IGNORE INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
                         VALUES (?,?,?,?,?,?,?,?,?,?)'''
             val = (j,temp["name"][0],temp["siret"][0],temp["address"][0],temp["city"][0],temp["zipcode"][0],temp["country"][0],0,None,None)
             cursor.execute(sql,val)
@@ -1123,7 +1333,7 @@ def finalTableAgent(database):
                 if score>maxScore:
                     maxScore=score
                     maxID=candidat
-            sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
+            sql = ''' INSERT OR IGNORE INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
                         VALUES (?,?,?,?,?,?,?,?,?,?)'''
             val = (j,temp["name"][candidat],temp["siret"][candidat],temp["address"][candidat],temp["city"][candidat],temp["zipcode"][candidat],temp["country"][candidat],0,None,None)
             cursor.execute(sql,val)  
@@ -1138,6 +1348,14 @@ def finalTableAgent(database):
     return database
 
 def addSireneInfo(database):
+    cursor = database.cursor()
+    agents = pd.read_sql_query("SELECT * FROM Agents", database,dtype=str)
+    names = np.array(agents["name"])
+    sirets = np.array(agents["siret"])
+    addresses = np.array(agents["address"])
+    citys = np.array(agents["city"])
+    countrys = np.array(agents["country"])
+    zipcodes = np.array(agents["zipcode"])
     dicoDepartement = {
         "200":"2A",
         "201":"2A",
@@ -1158,18 +1376,33 @@ def addSireneInfo(database):
     for i in range(len(datas)):
         ### Modif departement:
         departement = dicoDepartement.get(zipcodes[i][0:3],zipcodes[i][0:2])
-        sql = ''' INSERT INTO Agents(agentID,name,siret,address,city,zipcode,country,department)
+        sql = ''' INSERT OR IGNORE INTO Agents(agentID,name,siret,address,city,zipcode,country,department)
                 VALUES (?,?,?,?,?,?,?,?)'''
         val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],departement)
-        oldNumbers = str(ids[i]).split("-")
-        for old in oldNumbers:
-            request ="UPDATE LotClients SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
-            sql = cursor.execute(request)
-            request ="UPDATE LotSuppliers SET agentID = '"+str(i)+"' WHERE agentID = '"+str(old)+"'"
-            sql = cursor.execute(request)
+        
     
     ###  
     database.commit()
+    return database
+
+def cleaningDatabase(database):
+    """Cleaning of the temp tables and files"""
+    cursor = database.cursor()
+    request = "DROP TABLE IF EXISTS CriteriaTemp"
+    sql = cursor.execute(request)
+    request = "DROP TABLE IF EXISTS AgentsTemp"
+    sql = cursor.execute(request)
+    request = "DROP TABLE IF EXISTS AgentsSiretiser"
+    sql = cursor.execute(request)
+    request = "DROP TABLE IF EXISTS AgentsLink"
+    sql = cursor.execute(request)
+    request = "DROP TABLE IF EXISTS AgentsBase"
+    sql = cursor.execute(request)
+    request = "DROP TABLE IF EXISTS CriteriaTemp"
+    sql = cursor.execute(request)
+    database.commit()
+    os.remove("ADeduper.csv")
+    os.remove("ResDedupe.csv")
     return database
 
 
@@ -1213,33 +1446,41 @@ def informationCompletion(database):
         
 
 ##### Main 
+if __name__ == '__main__':
+    # Download files
+    #downloadFiles()
 
-# Creation of the database
-db = databaseCreation("FoppaTEST.db")
+    # Creation of the database
+    db = databaseCreation("Foppa.db")
 
-# Load each csv files of data europa
-datas = load_csv_files()
+    # Load each csv files of data europa
+    datas = load_csv_files()
 
-# First cleaning and filling of the database
-db = firstCleaning(datas,db)
+    # First cleaning and filling of the database
+    db = firstCleaning(datas,db)
 
-# Second processing
-db = mainCleaning(db)
+    # Second processing
+    db = mainCleaning(db)
 
-#Normalization
-db = fineTuningAgents(db)
+    #Normalization
+    db = fineTuningAgents(db)
 
-# Criteria processing 
-db = criteriaProcessing(db)
+    # Criteria processing 
+    db = criteriaProcessing(db)
 
-# Siretization step
-#db = siretization(db)
+    # Siretization step
+    #db = siretization(db)
 
-# Update of the database according to the siretization
-datas = mergingAfterSiretization(db)
+    # Update of the database according to the siretization
+    datas = mergingAfterSiretization(db)
 
-# Dedupe step
-db = dedupeAgent(datas,db)
+    # Dedupe step
+    db = dedupeAgent(datas,db)
 
-# Update of the database according to Dedupe
-db = finalTableAgent(db)
+    # Update of the database according to Dedupe
+    db = finalTableAgent(db)
+
+    db = cleaningDatabase(db)
+    #db = addSireneInfo(db)
+    
+    
