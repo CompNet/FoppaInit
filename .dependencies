@@ -1,0 +1,7 @@
+# This file documents environment dependencies
+
+sqlite3: "~> 2.3"
+pandas: "~> 9.3"
+numpy: "~> 2.7"
+blazingsql: "~> 5.5"
+rapidfuzz: "~> 5.5"
