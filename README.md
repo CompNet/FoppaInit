@@ -17,6 +17,10 @@ These scripts are meant to create the Foppa database from raw TED files. Foppa c
 
 # Organization
 
+This repository is composed of the following elements:
+* foppaInit.py : Python script in order to create the Foppa Database.
+* data : folder with the files needed to create the database.
+
 Here are the third-party softwares used in this version:
 * hexaposte : https://www.data.gouv.fr/fr/datasets/base-officielle-des-codes-postaux/
 * SIRENE : https://www.data.gouv.fr/fr/datasets/base-sirene-des-entreprises-et-de-leurs-etablissements-siren-siret/
