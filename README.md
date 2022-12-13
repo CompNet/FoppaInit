@@ -21,7 +21,7 @@ The process conducted to build the FOPPA is quite long, though (around 1 week, d
 # Organization
 
 This repository is composed of the following elements:
-* `install.py` : Python script that installs the required packages.
+* `requirements.txt` : List of Python packages used in foppaInit.py.
 * `foppaInit.py` : Python script in order to create the FOPPA Database.
 * `data` : folder with the input files needed to create the database.
 
@@ -37,7 +37,7 @@ You first need to install `python` and the required packages:
 1. Install the [`python` language](https://www.python.org)
 2. Download this project from GitHub and unzip.
 3. Install CUDA (https://developer.nvidia.com/cuda-downloads)
-4. Execute `install.py` to install some of the required packages (see also the *Dependencies* Section).
+4. Execute `pip install -r requirements.txt` to install some of the required packages (see also the *Dependencies* Section).
 
 Package `blazingsql` requires a specific installation:
 
