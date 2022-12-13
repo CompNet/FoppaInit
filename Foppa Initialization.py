@@ -1,6 +1,6 @@
 ## Foppa Initialization
 
-#import date
+"""Imports"""
 import math
 import json
 import sqlite3
@@ -30,13 +30,13 @@ import zipfile
 
 def downloadFiles():
     """Download of the various files in the FOPPA database"""
-    os.mkdir("data/contractNotices")  #Contract notices from TED
-    os.mkdir("data/contractAwards")   #Contract award from TED
-    os.mkdir("data/opening")          #Opening dates from SIRENE
-    os.mkdir("data/Etab")             #All facilities from SIRENE
+    #os.mkdir("data/contractNotices")  #Contract notices from TED
+    #os.mkdir("data/contractAwards")   #Contract award from TED
+    #os.mkdir("data/opening")          #Opening dates from SIRENE
+    #os.mkdir("data/Etab")             #All facilities from SIRENE
     os.mkdir("data/geolocate")        #For localisation of SIRENE entities
     
-    
+    """
     #### Contract award
     urls = ["https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2010.zip",
             "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2011.zip",
@@ -203,7 +203,7 @@ def downloadFiles():
             temp = "MAIRIE DE "+datas["ville"][l]
             datas["nomEnseigne"][l] = temp
     datas.to_csv("data/Etab/EtabPart0.csv",index=False)
-    
+    """
     #Geolocalisation 
     urls = ["https://files.data.gouv.fr/insee-sirene-geo/GeolocalisationEtablissement_Sirene_pour_etudes_statistiques_utf8.zip"]
     for url in urls:
@@ -248,7 +248,7 @@ def databaseCreation(nameDatabase):
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS Names"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Names(agentID INTEGER,name TEXT,ids TEXT)"
+    request = "CREATE TABLE Names(agentID INTEGER,name TEXT)"
     sql = cursor.execute(request)
     database.commit()
     return database
@@ -267,6 +267,7 @@ def load_csv_files():
     return result
 
 def firstCleaning(datas,database):
+    """Insert into database + some preliminar cleaning"""
     datas = datas.loc[0:100]
     columns = datas.columns
     # First cleaning : Normalize + Upper strings
@@ -506,8 +507,8 @@ def mainCleaning(database):
         datas["city"]=datas["city"].replace(regex=key,value=replaceVille[key])
     datas["city"] = datas["city"].str.lstrip()
     datas["city"] = datas["city"].str.rstrip()
-    datas["city"] = datas["city"].replace(regex=r")",value=r"")
-    datas["city"] = datas["city"].replace(regex=r"(",value=r"")
+    datas["city"] = datas["city"].replace(regex=r"\)",value=r"")
+    datas["city"] = datas["city"].replace(regex=r"\(",value=r"")
 
     #Nettoyage du code Postal
     datas["zipcode"]=datas["zipcode"].replace(regex='[^\d]+',value="")
@@ -686,6 +687,13 @@ def fineTuningAgents(database):
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'''
         val = (i,names[i],sirets[i],addresses[i],Newaddresses[i],citys[i],zipcodes[i],countrys[i],dates[i],catJuridique[i],ids[i],types[i])
         cursor.execute(sql,val)
+        
+        tempID = str(ids[i]).split("-")[0]
+        sql = ''' INSERT INTO Names(agentID,name)
+                VALUES (?,?)'''
+        val = (int(tempID),names[i])
+        cursor.execute(sql,val)
+        
     request = "UPDATE AgentsSiretiser SET name = NULLIF(name,'NULL_IDENTIFIER')"
     sql = cursor.execute(request)
     request = "UPDATE AgentsSiretiser SET siret = NULLIF(siret,'NULL_IDENTIFIER')"
@@ -718,9 +726,10 @@ def safe_cast(val, to_type, default=None):
         return default
     
 def findType(chaine):
+    """Matching between strings in Criteria and criteria Type"""
     lchaine = str.upper(chaine)
     lchaine = unidecode(lchaine)
-    if "ENVIRONNEMENT" in lchaine:
+    if "ENVIRONNEMENT" in lchaine: ##Specific case : Environnemental and Social aspect mixed together
         if "SOCIA" in lchaine:
             return("MIXTE")
     if "TECHNIQUE" in lchaine:
@@ -764,6 +773,7 @@ def findType(chaine):
 
 
 def criteriaProcessing(database):
+    """Split, clean and Normalization of each criterion"""
     tripleDash=0
     hyphens=0
     noC=0
@@ -883,6 +893,7 @@ def criteriaProcessing(database):
 
 
 def siretization(database):
+    """Siretization step"""
     cursor = database.cursor()
     datas = pd.read_sql_query("SELECT * FROM AgentsSiretiser", database,dtype=str) 
     request = "DROP TABLE IF EXISTS AgentsSiretiser"
@@ -891,12 +902,12 @@ def siretization(database):
     sql = cursor.execute(request)
     start = time.time()
 
-    ###Creation des BDD : 
+    ###Creation of the databases
     cwd = os.getcwd()
-    data_path = cwd+'/data/Ouvertures/*.csv'
-    d_p = cwd+'/data/Etab/*.csv'
-    d_s =cwd +'/data/foppaFiles/Sigles.csv'
-    data_path_noms =cwd +'/data/foppaFiles/ChangementsNoms.csv'
+    data_path = cwd+'/data/opening/*.csv'   ##Opening database
+    d_p = cwd+'/data/Etab/*.csv'            # Every facilities in SIRENE
+    d_s =cwd +'/data/foppaFiles/Sigles.csv' # Acronyms
+    data_path_noms =cwd +'/data/foppaFiles/ChangementsNoms.csv' #Name modification during time
 
     bc = BlazingContext()
     col_types = ["str","str","str","str","str","str","str","str","str","str","str","str"]
@@ -919,7 +930,7 @@ def siretization(database):
 
 
     dicoAssociation ={}
-    ####Creation des datasets Speciaux:
+    ####Creation of specific datasets for CAEs
 
     ##CAF
     dfCAF = bc.sql("select * from etablissement WHERE TypeActivite = '84.30C' AND CatJuridique='8110'")
@@ -1091,8 +1102,6 @@ def siretization(database):
                         datas["VilleSirene"][j] = gdf['ville'][position]
                         datas["CPSirene"][j] = gdf['cp'][position]
                     end = time.time()
-                    print("Filtrage3")
-                    print(end-start)
                 
     ids = np.array(datas["ids"]) 
     types = np.array(datas["type"]) 
@@ -1282,7 +1291,7 @@ def finalTableAgent(database):
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS Names"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Names(agentID INTEGER,name TEXT)"
+    request = "CREATE TABLE Names(agentID INTEGER,name TEXT,PRIMARY KEY(agentID,name))"
     sql = cursor.execute(request)
 
     dico = {}
@@ -1339,7 +1348,7 @@ def finalTableAgent(database):
             cursor.execute(sql,val)  
     for i in range(len(namesID)):
         if (int(namesID[i]) in dico):
-            sql = ''' INSERT INTO Names(agentID,name)
+            sql = ''' INSERT OR IGNORE INTO Names(agentID,name)
                         VALUES (?,?)'''
             val = (dico[int(namesID[i])],namesAgent[i])
             cursor.execute(sql,val)
@@ -1348,8 +1357,31 @@ def finalTableAgent(database):
     return database
 
 def addSireneInfo(database):
+    """ Adding depatment + additional information from SIRENE for siretized Agents (latitude,longitude)"""
     cursor = database.cursor()
+    
+    #Load GeoSirene
+    filename = "data/geolocate/GeolocalisationEtablissement_Sirene_pour_etudes_statistiques_utf8.csv"
+    chunksize = 10 ** 6
+    ds = []
+    for chunk in pd.read_csv(filename, chunksize=chunksize,dtype = str,sep=";"):
+        chunk = chunk[["siret","x_longitude","y_latitude"]]
+        ds.append(chunk)
+    
+    geoSirene = pd.concat(ds) 
+    del ds   
+    
+    #Put geoSirene in the database
+    geoSirene.to_sql('geolocate',database, if_exists='append', index = False)
+    
+    # Agents from the final step
     agents = pd.read_sql_query("SELECT * FROM Agents", database,dtype=str)
+    request = "DROP TABLE IF EXISTS Agents"
+    sql = cursor.execute(request)
+    request = "CREATE TABLE Agents(agentID INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, department TEXT,longitude TEXT, latitude TEXT,PRIMARY KEY(agentID))"
+    
+    
+    sql = cursor.execute(request)
     names = np.array(agents["name"])
     sirets = np.array(agents["siret"])
     addresses = np.array(agents["address"])
@@ -1371,16 +1403,35 @@ def addSireneInfo(database):
         "978":"978",
         "986":"986",
         "987":"987",
-        "988":"988"}
-    departement = []     
-    for i in range(len(datas)):
-        ### Modif departement:
-        departement = dicoDepartement.get(zipcodes[i][0:3],zipcodes[i][0:2])
-        sql = ''' INSERT OR IGNORE INTO Agents(agentID,name,siret,address,city,zipcode,country,department)
-                VALUES (?,?,?,?,?,?,?,?)'''
-        val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],departement)
+        "988":"988"}    
+    for i in range(len(agents)):
         
+        ### Base Values
+        long = None
+        lat = None
+        departement = None
+        
+        ### if siret : find lat and long
+        if len(str(sirets[i]))>13:
+            request = "SELECT x_longitude,y_latitude from geolocate where siret = '"+str(sirets[i])+"'"
+            cursor.execute(request)
+            results = cursor.fetchall()
+            if len(results)>0:
+                long = results[0][0]
+                lat = results[0][1]
+                
+            
+        ### departement matching:
+        if len(str(zipcodes[i]))<4:
+            departement = dicoDepartement.get(zipcodes[i][0:3],zipcodes[i][0:2])
+        sql = ''' INSERT OR IGNORE INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
+                VALUES (?,?,?,?,?,?,?,?,?,?)'''
+        val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],departement,long,lat)
+        cursor.execute(sql,val)
+    ###
     
+    request = "DROP TABLE IF EXISTS geolocate"
+    cursor.execute(request)
     ###  
     database.commit()
     return database
@@ -1403,6 +1454,7 @@ def cleaningDatabase(database):
     database.commit()
     os.remove("ADeduper.csv")
     os.remove("ResDedupe.csv")
+    os.remove("data/geolocate/GeolocalisationEtablissement_Sirene_pour_etudes_statistiques_utf8.csv")
     return database
 
 
@@ -1416,7 +1468,6 @@ def contractNoticesCompletion(database):
         datas = pd.read_csv("../data/TedContractNotices/csv/"+j,dtype=str)
         datas = datas[datas["ISO_COUNTRY_CODE"].str.contains("FR")]
         newDF.append(datas[["ID_NOTICE_CN","FUTURE_CAN_ID","B_RENEWALS","DURATION","DT_DISPATCH","DT_APPLICATIONS"]])
-        print(newDF)
     result = pd.concat(newDF)
 
     result.assign(pubDur=0)
@@ -1441,10 +1492,6 @@ def contractNoticesCompletion(database):
     result.to_csv("LotsDurationV2.csv",index=False)
 
     
-def informationCompletion(database):
-    return database
-        
-
 ##### Main 
 if __name__ == '__main__':
     # Download files
@@ -1480,7 +1527,10 @@ if __name__ == '__main__':
     # Update of the database according to Dedupe
     db = finalTableAgent(db)
 
-    db = cleaningDatabase(db)
-    #db = addSireneInfo(db)
+    # Delete temporary files
+    #db = cleaningDatabase(db)
+    
+    #Complete with SIRENE additional information 
+    db = addSireneInfo(db)
     
     
