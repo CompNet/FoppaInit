@@ -8,7 +8,7 @@ FoppaInit is free software: you can redistribute it and/or modify it under the t
 
 * **Lab site:** http://lia.univ-avignon.fr
 * **GitHub repo:** https://github.com/CompNet/FoppaInit
-* **Data:** https://doi.org/xxxxxxx
+* **Data:** https://doi.org/10.5281/zenodo.7433155
 * **Contact:** Lucas Potin <lucas.potin@univ-avignon.fr>
  
 -------------------------------------------------------------------------
@@ -16,7 +16,7 @@ FoppaInit is free software: you can redistribute it and/or modify it under the t
 # Description
 These scripts create the FOPPA database from raw TED files. This database relies mainly on the award notices of public contracts related to French clients and suppliers from 2010 to 2020 in the Tenders Electronic Daily. It also proposes an enrichment of these data, thanks to the siretization of agents (i.e. the retrieval of their unique IDs, which is missing for most of them) as well as the cleaning and extraction of award criteria, and other processing.
 
-The process conducted to build the FOPPA is quite long, though (around 1 week, depeding on the hardware), so the produced database is alternatively directly available on [Zenodo](xxxxxxxxx). The detail of this processing are described in a technical report [L'22].
+The process conducted to build the FOPPA is quite long, though (around 1 week, depeding on the hardware), so the produced database is alternatively directly available on [Zenodo](https://doi.org/10.5281/zenodo.7433155). The detail of this processing are described in a technical report [L'22].
 
 # Organization
 
@@ -66,7 +66,7 @@ Tested with Python version 3.8.0, with the following packages:
 * [`dedupe`](https://pypi.org/project/dedupe/): version 2.0.19.
 
 # Data
-The produced database is directly available publicly online on [Zenodo](xxxxxxxxx), under two different forms:
+The produced database is directly available publicly online on [Zenodo](https://doi.org/10.5281/zenodo.7433155), under two different forms:
 * SQL dump.
 * CSV files (one by table).
 
