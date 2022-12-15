@@ -16,7 +16,9 @@ FoppaInit is free software: you can redistribute it and/or modify it under the t
 # Description
 These scripts create the FOPPA database from raw TED files. This database relies mainly on the award notices of public contracts related to French clients and suppliers from 2010 to 2020 in the Tenders Electronic Daily. It also proposes an enrichment of these data, thanks to the siretization of agents (i.e. the retrieval of their unique IDs, which is missing for most of them) as well as the cleaning and extraction of award criteria, and other processing.
 
-The process conducted to build the FOPPA is quite long, though (around 1 week, depeding on the hardware), so the produced database is alternatively directly available on [Zenodo](https://doi.org/10.5281/zenodo.7433155). The detail of this processing are described in a technical report [L'22].
+The process conducted to build the FOPPA is quite long, though (around 1 week, depeding on the hardware), so the produced database is alternatively directly available on [Zenodo](https://doi.org/10.5281/zenodo.7433155). The detail of this processing are described in a technical report [P'22].
+
+This work was conducted in the framework of [DeCoMaP](https://anr.fr/Projet-ANR-19-CE38-0004) ANR project (Detection of corruption in public procurement markets). If you use this source code or the produced database, please cite bibliographical reference [P'22].
 
 # Organization
 
