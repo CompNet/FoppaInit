@@ -778,7 +778,7 @@ def criteriaProcessing(database):
     cursor = database.cursor()
     request = "DROP TABLE IF EXISTS Criteria"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Criteria (critereID INTEGER,lotID INTEGER,name TEXT,weight INTEGER,type TEXT,PRIMARY KEY(critereID),FOREIGN KEY(lotID) REFERENCES Lots(lotID) ON UPDATE CASCADE)"
+    request = "CREATE TABLE Criteria (criterionID INTEGER,lotID INTEGER,name TEXT,weight INTEGER,type TEXT,PRIMARY KEY(criterionID),FOREIGN KEY(lotID) REFERENCES Lots(lotID) ON UPDATE CASCADE)"
     sql = cursor.execute(request)
     datas = pd.read_sql_query("SELECT * FROM CriteriaTemp", database,dtype=str) 
     datas["CRIT_PRICE_WEIGHT"] =datas["CRIT_PRICE_WEIGHT"].str.replace("-","",regex=True)
