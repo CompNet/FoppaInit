@@ -37,6 +37,7 @@ def downloadFiles():
     os.mkdir("data/geolocate")        #For localisation of SIRENE entities
     
     #### Contract award
+    
     urls = ["https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2010.zip",
             "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2011.zip",
             "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2012.zip",
@@ -104,7 +105,7 @@ def downloadFiles():
                 chunk.to_csv(name,index=False)   
                 compteur=compteur+1 
     os.remove("data/opening/StockEtablissementHistorique_utf8.csv")
-    os.remove("HistoEtab.csv")
+    os.remove("HistoEtab.zip")
     
     #Facilities 
     
@@ -115,7 +116,7 @@ def downloadFiles():
         with zipfile.ZipFile("Sirene.zip", 'r') as zip_ref:
             zip_ref.extractall("data/Etab")
     
-    os.remove("Sirene.csv")
+    os.remove("Sirene.zip")
     chunksize = 10 ** 6
     compteur=0    
     allCol = ["siret","siren","nomEnseigne","nomUnite","num","typevoie","libelle","cp","ville","TypeActivite","CatJuridique"]
@@ -219,35 +220,35 @@ def databaseCreation(nameDatabase):
     cursor = database.cursor()
     request = "DROP TABLE IF EXISTS AgentsBase"
     sql = cursor.execute(request)
-    request = "CREATE TABLE AgentsBase(agentID INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, date TEXT,type TEXT,PRIMARY KEY(agentID))"
+    request = "CREATE TABLE AgentsBase(agentId INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, date TEXT,type TEXT,PRIMARY KEY(agentId))"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS Agents"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Agents(agentID INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, department TEXT,PRIMARY KEY(agentID))"
+    request = "CREATE TABLE Agents(agentId INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, department TEXT,PRIMARY KEY(agentId))"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS AgentsLink"
     sql = cursor.execute(request)
-    request = "CREATE TABLE AgentsLink(temporalagentID INTEGER,agentID INTEGER)"
+    request = "CREATE TABLE AgentsLink(temporalagentId INTEGER,agentId INTEGER)"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS CriteriaTemp"
     sql = cursor.execute(request)
-    request = "CREATE TABLE CriteriaTemp (lotID INTEGER,CRIT_PRICE_WEIGHT TEXT,CRIT_WEIGHTS TEXT, CRIT_CRITERIA TEXT)"
+    request = "CREATE TABLE CriteriaTemp (lotId INTEGER,CRIT_PRICE_WEIGHT TEXT,CRIT_WEIGHTS TEXT, CRIT_CRITERIA TEXT)"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS Lots"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Lots(lotID INTEGER,tedCANID INTEGER,corrections INTEGER,cancelled INTEGER,awardDate TEXT,awardEstimatedPrice NUMERIC,awardPrice NUMERIC,CPV TEXT,tenderNumber INTEGER,onBehalf TINYINT,jointProcurement TINYINT,fraAgreement TINYINT,fraEstimated INTEGER,lotsNumber INTEGER,accelerated TINYINT,outOfDirectives TINYINT,contractorSME TINYINT,numberTendersSME INTEGER,subContracted TINYINT,gpa	TINYINT,multipleCAE	TINYINT,typeOfContract TEXT,topType	TEXT,renewal TINYINT, contractDuration INTEGER, publicityDuration INTEGER,PRIMARY KEY(lotID))"
+    request = "CREATE TABLE Lots(lotId INTEGER,tedCanId INTEGER,correctionsNB INTEGER,cancelled INTEGER,awardDate TEXT,awardEstimatedPrice NUMERIC,awardPrice NUMERIC,cpv TEXT,tenderNumber INTEGER,onBehalf TINYINT,jointProcurement TINYINT,fraAgreement TINYINT,fraEstimated INTEGER,lotsNumber INTEGER,accelerated TINYINT,outOfDirectives TINYINT,contractorSme TINYINT,numberTendersSme INTEGER,subContracted TINYINT,gpa	TINYINT,multipleCae	TINYINT,typeOfContract TEXT,topType	TEXT,renewal TINYINT, contractDuration INTEGER, publicityDuration INTEGER,PRIMARY KEY(lotId))"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS LotClients"
     sql = cursor.execute(request)
-    request = "CREATE TABLE LotClients(lotID INTEGER,agentID INTEGER,FOREIGN KEY(agentID) REFERENCES Agents(agentID) ON UPDATE CASCADE,FOREIGN KEY(lotID) REFERENCES Lots(lotID) ON UPDATE CASCADE)"
+    request = "CREATE TABLE LotClients(lotId INTEGER,agentId INTEGER,FOREIGN KEY(agentId) REFERENCES Agents(agentId) ON UPDATE CASCADE,FOREIGN KEY(lotId) REFERENCES Lots(lotId) ON UPDATE CASCADE)"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS LotSuppliers"
     sql = cursor.execute(request)
-    request = "CREATE TABLE LotSuppliers(lotID INTEGER,agentID INTEGER,FOREIGN KEY(agentID) REFERENCES Agents(agentID) ON UPDATE CASCADE,FOREIGN KEY(lotID) REFERENCES Lots(lotID) ON UPDATE CASCADE)"
+    request = "CREATE TABLE LotSuppliers(lotId INTEGER,agentId INTEGER,FOREIGN KEY(agentId) REFERENCES Agents(agentId) ON UPDATE CASCADE,FOREIGN KEY(lotId) REFERENCES Lots(lotId) ON UPDATE CASCADE)"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS Names"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Names(agentID INTEGER,name TEXT)"
+    request = "CREATE TABLE Names(agentId INTEGER,name TEXT)"
     sql = cursor.execute(request)
     database.commit()
     return database
@@ -288,8 +289,8 @@ def firstCleaning(datas,database):
     townWIN = np.array(datas["WIN_TOWN"])
     postalCodeWIN = np.array(datas["WIN_POSTAL_CODE"])
     countryWIN = np.array(datas["WIN_COUNTRY_CODE"])
-    tedCANID = np.array(datas["ID_NOTICE_CAN"])
-    corrections = np.array(datas["CORRECTIONS"])
+    tedCanId = np.array(datas["ID_NOTICE_CAN"])
+    correctionsNB = np.array(datas["CORRECTIONS"])
     cancelled = np.array(datas["CANCELLED"])
     awardEstimatedPrice = np.array(datas["AWARD_EST_VALUE_EURO"])
     awardPrice = np.array(datas["AWARD_VALUE_EURO_FIN_1"])
@@ -302,11 +303,11 @@ def firstCleaning(datas,database):
     lotsNumber = np.array(datas["ID_LOT_AWARDED"])
     accelerated = np.array(datas["B_ACCELERATED"])
     outOfDirectives = np.array(datas["OUT_OF_DIRECTIVES"])
-    contractorSME = np.array(datas["B_CONTRACTOR_SME"])
-    numbersTendersSME = np.array(datas["NUMBER_TENDERS_SME"])
+    contractorSme = np.array(datas["B_CONTRACTOR_SME"])
+    numbersTendersSme = np.array(datas["NUMBER_TENDERS_SME"])
     subContracted = np.array(datas["B_SUBCONTRACTED"])
     gpa = np.array(datas["B_GPA"])
-    multipleCAE = np.array(datas["B_MULTIPLE_CAE"])
+    multipleCae = np.array(datas["B_MULTIPLE_CAE"])
     typeofContract = np.array(datas["TYPE_OF_CONTRACT"])
     topType = np.array(datas["TOP_TYPE"])
     criteria = np.array(datas["CRIT_CRITERIA"])
@@ -333,14 +334,14 @@ def firstCleaning(datas,database):
     cur = database.cursor()
     compteurAgent=0
     for i in range(len(datas)):
-        sql = ''' INSERT INTO CriteriaTemp(lotID,CRIT_PRICE_WEIGHT,CRIT_WEIGHTS, CRIT_CRITERIA)
+        sql = ''' INSERT INTO CriteriaTemp(lotId,CRIT_PRICE_WEIGHT,CRIT_WEIGHTS, CRIT_CRITERIA)
                   VALUES (?,?,?,?) '''
         val =(i,criteriaP[i],criteriaW[i],criteria[i])
         cur.execute(sql,val)
         
-        sql = ''' INSERT INTO Lots(lotID,tedCANID,corrections,cancelled,awardDate,awardEstimatedPrice,awardPrice,CPV,tenderNumber,onBehalf,jointProcurement,fraAgreement,fraEstimated,lotsNumber,accelerated,outOfDirectives,contractorSME,numberTendersSME,subContracted,gpa,multipleCAE,typeOfContract,topType)
+        sql = ''' INSERT INTO Lots(lotId,tedCanId,correctionsNB,cancelled,awardDate,awardEstimatedPrice,awardPrice,cpv,tenderNumber,onBehalf,jointProcurement,fraAgreement,fraEstimated,lotsNumber,accelerated,outOfDirectives,contractorSme,numberTendersSme,subContracted,gpa,multipleCae,typeOfContract,topType)
                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) '''
-        val = (i,tedCANID[i],corrections[i],cancelled[i],awardDate[i],awardEstimatedPrice[i],awardPrice[i],cpv[i],tenderNumber[i],onBehalf[i],jointProcurement[i],fraAgreement[i],fraEstimated[i],lotsNumber[i],accelerated[i],outOfDirectives[i],contractorSME[i],numbersTendersSME[i],subContracted[i],gpa[i],multipleCAE[i],typeofContract[i],topType[i])
+        val = (i,tedCanId[i],correctionsNB[i],cancelled[i],awardDate[i],awardEstimatedPrice[i],awardPrice[i],cpv[i],tenderNumber[i],onBehalf[i],jointProcurement[i],fraAgreement[i],fraEstimated[i],lotsNumber[i],accelerated[i],outOfDirectives[i],contractorSme[i],numbersTendersSme[i],subContracted[i],gpa[i],multipleCae[i],typeofContract[i],topType[i])
         cur.execute(sql,val)
         date = None
         if len(str(awardDate[i]))>4:
@@ -380,11 +381,11 @@ def firstCleaning(datas,database):
                 tempPC = pcs[k]
             if not(countrys==None) and k<len(countrys):
                 tempCountry = countrys[k]
-            sql = ''' INSERT INTO AgentsBase(agentID,name,siret,address,city,zipcode,country,date,type)
+            sql = ''' INSERT INTO AgentsBase(agentId,name,siret,address,city,zipcode,country,date,type)
                 VALUES (?,?,?,?,?,?,?,?,?)'''
             val = (compteurAgent,tempName,tempSiret,tempAddress,tempTown,tempPC,tempCountry,date,"CAE")
             cur.execute(sql,val)
-            sql = ''' INSERT INTO LotClients(lotID,agentID)
+            sql = ''' INSERT INTO LotClients(lotId,agentId)
                 VALUES (?,?)'''
             val = (i,compteurAgent)
             cur.execute(sql,val)
@@ -439,11 +440,11 @@ def firstCleaning(datas,database):
                 tempPC = pcs[k]
             if not(countrys==None) and k<len(countrys):
                 tempCountry = countrys[k]
-            sql = ''' INSERT INTO AgentsBase(agentID,name,siret,address,city,zipcode,country,date,type)
+            sql = ''' INSERT INTO AgentsBase(agentId,name,siret,address,city,zipcode,country,date,type)
                     VALUES (?,?,?,?,?,?,?,?,?)'''
             val = (compteurAgent,tempName,tempSiret,tempAddress,tempTown,tempPC,tempCountry,date,"WIN")
             cur.execute(sql,val)
-            sql = ''' INSERT INTO LotSuppliers(lotID,agentID)
+            sql = ''' INSERT INTO LotSuppliers(lotId,agentId)
                     VALUES (?,?)'''
             val = (i,compteurAgent)
             cur.execute(sql,val)
@@ -518,16 +519,16 @@ def mainCleaning(database):
     datas['name'] = datas['name'].fillna("NULL_IDENTIFIER")
     datas['address'] = datas['address'].fillna("NULL_IDENTIFIER")
     datas['city'] = datas['city'].fillna("NULL_IDENTIFIER")
-    datas2 = datas.groupby(["name",'address','city','siret'],as_index=False).agg({'agentID':'-'.join,'name':'first','siret':'first','address':'first','city':'first','zipcode':'first','country':'first','date':'first','type':'first'})
+    datas2 = datas.groupby(["name",'address','city','siret'],as_index=False).agg({'agentId':'-'.join,'name':'first','siret':'first','address':'first','city':'first','zipcode':'first','country':'first','date':'first','type':'first'})
     datas = datas2
     cursor = database.cursor()
     request = "DROP TABLE IF EXISTS AgentsTemp"
     sql = cursor.execute(request)
-    request = "CREATE TABLE IF NOT EXISTS AgentsTemp(agentID INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, date TEXT,ids TEXT,type TEXT,PRIMARY KEY(agentID))"
+    request = "CREATE TABLE IF NOT EXISTS AgentsTemp(agentId INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, date TEXT,ids TEXT,type TEXT,PRIMARY KEY(agentId))"
     sql = cursor.execute(request)
 
     types = np.array(datas["type"]) 
-    ids = np.array(datas["agentID"]) 
+    ids = np.array(datas["agentId"]) 
     names = np.array(datas["name"]) 
     sirets = np.array(datas["siret"]) 
     addresses = np.array(datas["address"]) 
@@ -537,7 +538,7 @@ def mainCleaning(database):
     dates = np.array(datas["date"]) 
 
     for i in range(len(ids)):
-        sql = ''' INSERT INTO AgentsTemp(agentID,name,siret,address,city,zipcode,country,date,ids,type)
+        sql = ''' INSERT INTO AgentsTemp(agentId,name,siret,address,city,zipcode,country,date,ids,type)
                 VALUES (?,?,?,?,?,?,?,?,?,?)'''
         val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],dates[i],ids[i],types[i])
         cursor.execute(sql,val)
@@ -550,7 +551,7 @@ def fineTuningAgents(database):
     ## La table a siretiser au final : 
     request = "DROP TABLE IF EXISTS AgentsSiretiser"
     sql = cursor.execute(request)
-    request = "CREATE TABLE IF NOT EXISTS AgentsSiretiser(agentID INTEGER,name TEXT,siret TEXT,address TEXT,newAddress TEXT,city TEXT,zipcode TEXT,country TEXT, date TEXT,catJuridique TEXT,company TEXT,ids TEXT,type TEXT, PRIMARY KEY(agentID))"
+    request = "CREATE TABLE IF NOT EXISTS AgentsSiretiser(agentId INTEGER,name TEXT,siret TEXT,address TEXT,newAddress TEXT,city TEXT,zipcode TEXT,country TEXT, date TEXT,catJuridique TEXT,company TEXT,ids TEXT,type TEXT, PRIMARY KEY(agentId))"
     sql = cursor.execute(request)
 
     ### 1 : Supprimer ce qu'on ne veut pas siretiser
@@ -675,13 +676,13 @@ def fineTuningAgents(database):
     catJuridique = np.array(datas["catJuridique"]) 
 
     for i in range(len(ids)):
-        sql = ''' INSERT INTO AgentsSiretiser(agentID,name,siret,address,newAddress,city,zipcode,country,date,catJuridique,ids,type)
+        sql = ''' INSERT INTO AgentsSiretiser(agentId,name,siret,address,newAddress,city,zipcode,country,date,catJuridique,ids,type)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'''
         val = (i,names[i],sirets[i],addresses[i],Newaddresses[i],citys[i],zipcodes[i],countrys[i],dates[i],catJuridique[i],ids[i],types[i])
         cursor.execute(sql,val)
         
         tempID = str(ids[i]).split("-")[0]
-        sql = ''' INSERT INTO Names(agentID,name)
+        sql = ''' INSERT INTO Names(agentId,name)
                 VALUES (?,?)'''
         val = (int(tempID),names[i])
         cursor.execute(sql,val)
@@ -725,15 +726,15 @@ def findType(chaine):
         if "SOCIA" in lchaine:
             return("MIXTE")
     if "TECHNIQUE" in lchaine:
-        return("TECHNIQUE")
+        return("TECHNICAL")
     if "TEHNIQUE" in lchaine:
-        return("TECHNIQUE")
+        return("TECHNICAL")
     if "PRIX" in lchaine:
         return("PRICE")
     if "DELAI" in lchaine:
         return("DELAY")
     if "ENVIRONNEMENT" in lchaine:
-        return("ENVIRONNEMENTAL")
+        return("ENVIRONMENTAL")
     if "REMISE" in lchaine:
         return("PRICE")
     if "MONTANT" in lchaine:
@@ -741,7 +742,7 @@ def findType(chaine):
     if "ECONOMIQUE" in lchaine:
         return("PRICE")
     if "DURABLE" in lchaine:
-        return("ENVIRONNEMENTAL")
+        return("ENVIRONMENTAL")
     if "COUT" in lchaine:
         return("PRICE") 
     if "TARIF" in lchaine:
@@ -751,15 +752,15 @@ def findType(chaine):
     if "SOCIAL" in lchaine:
         return("SOCIAL")
     if "QUALITE" in lchaine:
-        return("TECHNIQUE")
+        return("TECHNICAL")
     if "QUALITATI" in lchaine:
-        return("TECHNIQUE")
+        return("TECHNICAL")
     if "HUMAIN" in lchaine:
         return("SOCIAL")
     if "PERSONNEL" in lchaine:
         return("SOCIAL")
     if "FONCTIONNALITE" in lchaine:
-        return("TECHNIQUE")
+        return("TECHNICAL")
     return("OTHER")
 
 
@@ -778,7 +779,7 @@ def criteriaProcessing(database):
     cursor = database.cursor()
     request = "DROP TABLE IF EXISTS Criteria"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Criteria (criterionID INTEGER,lotID INTEGER,name TEXT,weight INTEGER,type TEXT,PRIMARY KEY(criterionID),FOREIGN KEY(lotID) REFERENCES Lots(lotID) ON UPDATE CASCADE)"
+    request = "CREATE TABLE Criteria (criterionId INTEGER,lotId INTEGER,name TEXT,weight INTEGER,type TEXT,PRIMARY KEY(criterionId),FOREIGN KEY(lotId) REFERENCES Lots(lotId) ON UPDATE CASCADE)"
     sql = cursor.execute(request)
     datas = pd.read_sql_query("SELECT * FROM CriteriaTemp", database,dtype=str) 
     datas["CRIT_PRICE_WEIGHT"] =datas["CRIT_PRICE_WEIGHT"].str.replace("-","",regex=True)
@@ -856,7 +857,7 @@ def criteriaProcessing(database):
         if len(listecrit)==1:
             if listecrit[0][2]=="MIXTE":
                 cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?)",
-                (critid,i,listecrit[0][0],50,"ENVIRONNEMENTAL"))
+                (critid,i,listecrit[0][0],50,"ENVIRONMENTAL"))
                 critid = critid+1
                 cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?)",
                 (critid,i,listecrit[0][0],50,"SOCIAL"))
@@ -869,7 +870,7 @@ def criteriaProcessing(database):
             for j in range(len(listecrit)):
                 if listecrit[j][2]=="MIXTE":
                     cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?)",
-                    (critid,i,listecrit[j][0],50*listecrit[j][1]/somme,"ENVIRONNEMENTAL"))
+                    (critid,i,listecrit[j][0],50*listecrit[j][1]/somme,"ENVIRONMENTAL"))
                     critid = critid+1
                     cursor.execute("INSERT or IGNORE INTO Criteria values (?,?,?,?,?)",
                     (critid,i,listecrit[j][0],50*listecrit[j][1]/somme,"SOCIAL"))
@@ -889,7 +890,7 @@ def siretization(database):
     datas = pd.read_sql_query("SELECT * FROM AgentsSiretiser", database,dtype=str) 
     request = "DROP TABLE IF EXISTS AgentsSiretiser"
     sql = cursor.execute(request)
-    request = "CREATE TABLE IF NOT EXISTS AgentsSiretiser(agentID INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode TEXT,country TEXT, date TEXT,catJuridique TEXT,ids TEXT,type TEXT, PRIMARY KEY(agentID))"
+    request = "CREATE TABLE IF NOT EXISTS AgentsSiretiser(agentId INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode TEXT,country TEXT, date TEXT,catJuridique TEXT,ids TEXT,type TEXT, PRIMARY KEY(agentId))"
     sql = cursor.execute(request)
     start = time.time()
 
@@ -1111,7 +1112,7 @@ def siretization(database):
     catJuridique = np.array(datas["catJuridique"]) 
 
     for i in range(len(ids)):
-        sql = ''' INSERT OR IGNORE INTO AgentsSiretiser(agentID,name,siret,address,city,zipcode,country,date,catJuridique,ids,type)
+        sql = ''' INSERT OR IGNORE INTO AgentsSiretiser(agentId,name,siret,address,city,zipcode,country,date,catJuridique,ids,type)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?)'''
         val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],dates[i],catJuridique[i],ids[i],types[i])
         cursor.execute(sql,val)
@@ -1263,19 +1264,19 @@ def finalTableAgent(database):
     lenCluster = len(datas.groupby("Cluster ID").count())
     request = "DROP TABLE IF EXISTS Agents"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Agents(agentID INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, department TEXT,longitude TEXT, latitude TEXT,PRIMARY KEY(agentID))"
+    request = "CREATE TABLE Agents(agentId INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, department TEXT,longitude TEXT, latitude TEXT,PRIMARY KEY(agentId))"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS LotClients"
     sql = cursor.execute(request)
-    request = "CREATE TABLE LotClients(lotID INTEGER,agentID INTEGER)"
+    request = "CREATE TABLE LotClients(lotId INTEGER,agentId INTEGER)"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS LotSuppliers"
     sql = cursor.execute(request)
-    request = "CREATE TABLE LotSuppliers(lotID INTEGER,agentID INTEGER)"
+    request = "CREATE TABLE LotSuppliers(lotId INTEGER,agentId INTEGER)"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS Names"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Names(agentID INTEGER,name TEXT,PRIMARY KEY(agentID,name))"
+    request = "CREATE TABLE Names(agentId INTEGER,name TEXT,PRIMARY KEY(agentId,name))"
     sql = cursor.execute(request)
 
     dico = {}
@@ -1286,23 +1287,23 @@ def finalTableAgent(database):
         for k in range(len(temp)):
             dico[int(temp[k])] = int(ClusterIds[j])
             
-    clientsLot = np.array(clients["lotID"])
-    clientsAgent = np.array(clients["agentID"])
-    suppliersLot = np.array(suppliers["lotID"])
-    suppliersAgent = np.array(suppliers["agentID"])
-    namesID = np.array(names["agentID"])
+    clientsLot = np.array(clients["lotId"])
+    clientsAgent = np.array(clients["agentId"])
+    suppliersLot = np.array(suppliers["lotId"])
+    suppliersAgent = np.array(suppliers["agentId"])
+    namesID = np.array(names["agentId"])
     namesAgent = np.array(names["name"]) 
 
     for i in range(len(clientsLot)):
         if (int(clientsAgent[i]) in dico):
-            sql = ''' INSERT OR IGNORE INTO LotClients(lotID,agentID)
+            sql = ''' INSERT OR IGNORE INTO LotClients(lotId,agentId)
                         VALUES (?,?)'''
             val = (int(clientsLot[i]),int(dico[int(clientsAgent[i])]))
             cursor.execute(sql,val)
             
     for i in range(len(suppliersLot)):
         if (int(suppliersAgent[i]) in dico):
-            sql = ''' INSERT OR IGNORE INTO LotSuppliers(lotID,agentID)
+            sql = ''' INSERT OR IGNORE INTO LotSuppliers(lotId,agentId)
                         VALUES (?,?)'''
             val = (int(suppliersLot[i]),int(dico[int(suppliersAgent[i])]))
             cursor.execute(sql,val)
@@ -1313,7 +1314,7 @@ def finalTableAgent(database):
         temp = temp.reset_index()
         ##Selection of the Agent. 
         if len(temp)==1:
-            sql = ''' INSERT OR IGNORE INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
+            sql = ''' INSERT OR IGNORE INTO Agents(agentId,name,siret,address,city,zipcode,country,department,longitude,latitude)
                         VALUES (?,?,?,?,?,?,?,?,?,?)'''
             val = (j,temp["name"][0],temp["siret"][0],temp["address"][0],temp["city"][0],temp["zipcode"][0],temp["country"][0],0,None,None)
             cursor.execute(sql,val)
@@ -1325,13 +1326,13 @@ def finalTableAgent(database):
                 if score>maxScore:
                     maxScore=score
                     maxID=candidat
-            sql = ''' INSERT OR IGNORE INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
+            sql = ''' INSERT OR IGNORE INTO Agents(agentId,name,siret,address,city,zipcode,country,department,longitude,latitude)
                         VALUES (?,?,?,?,?,?,?,?,?,?)'''
             val = (j,temp["name"][candidat],temp["siret"][candidat],temp["address"][candidat],temp["city"][candidat],temp["zipcode"][candidat],temp["country"][candidat],0,None,None)
             cursor.execute(sql,val)  
     for i in range(len(namesID)):
         if (int(namesID[i]) in dico):
-            sql = ''' INSERT OR IGNORE INTO Names(agentID,name)
+            sql = ''' INSERT OR IGNORE INTO Names(agentId,name)
                         VALUES (?,?)'''
             val = (dico[int(namesID[i])],namesAgent[i])
             cursor.execute(sql,val)
@@ -1361,7 +1362,7 @@ def addSireneInfo(database):
     agents = pd.read_sql_query("SELECT * FROM Agents", database,dtype=str)
     request = "DROP TABLE IF EXISTS Agents"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Agents(agentID INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, department TEXT,longitude TEXT, latitude TEXT,PRIMARY KEY(agentID))"
+    request = "CREATE TABLE Agents(agentId INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, department TEXT,longitude TEXT, latitude TEXT,PRIMARY KEY(agentId))"
     
     
     sql = cursor.execute(request)
@@ -1405,9 +1406,9 @@ def addSireneInfo(database):
                 
             
         ### departement matching:
-        if len(str(zipcodes[i]))<4:
+        if len(str(zipcodes[i]))>4:
             departement = dicoDepartement.get(zipcodes[i][0:3],zipcodes[i][0:2])
-        sql = ''' INSERT OR IGNORE INTO Agents(agentID,name,siret,address,city,zipcode,country,department,longitude,latitude)
+        sql = ''' INSERT OR IGNORE INTO Agents(agentId,name,siret,address,city,zipcode,country,department,longitude,latitude)
                 VALUES (?,?,?,?,?,?,?,?,?,?)'''
         val = (i,names[i],sirets[i],addresses[i],citys[i],zipcodes[i],countrys[i],departement,long,lat)
         cursor.execute(sql,val)
@@ -1437,7 +1438,7 @@ def cleaningDatabase(database):
     database.commit()
     os.remove("ADeduper.csv")
     os.remove("ResDedupe.csv")
-    os.remove("data/geolocate/GeolocalisationEtablissement_Sirene_pour_etudes_statistiques_utf8.csv")
+    #os.remove("data/geolocate/GeolocalisationEtablissement_Sirene_pour_etudes_statistiques_utf8.csv")
     return database
 
 
@@ -1476,9 +1477,9 @@ def contractNoticesCompletion(database):
         renewals= None
         contractDuration = None
         publicityDuration = None
-        tedCANID = lots["tedCANID"][i]
-        lotID = lots["lotID"][i]
-        request = "SELECT B_RENEWALS,DURATION,pubDur from contractNotice where FUTURE_CAN_ID = '"+str(tedCANID)+"'"
+        tedCanId = lots["tedCanId"][i]
+        lotId = lots["lotId"][i]
+        request = "SELECT B_RENEWALS,DURATION,pubDur from contractNotice where FUTURE_CAN_ID = '"+str(tedCanId)+"'"
         cursor.execute(request)
         results = cursor.fetchall()
         if len(results)>0:
@@ -1486,13 +1487,13 @@ def contractNoticesCompletion(database):
             contractDuration = results[0][1]
             publicityDuration = results[0][2]
         if not(renewals==None):
-            request = "UPDATE Lots set renewal ='"+str(renewals)+"' WHERE lotID ='"+str(lotID)+"'"
+            request = "UPDATE Lots set renewal ='"+str(renewals)+"' WHERE lotId ='"+str(lotId)+"'"
             cursor.execute(request)
         if not(contractDuration==None):
-            request = "UPDATE Lots set contractDuration ='"+str(contractDuration)+"' WHERE lotID ='"+str(lotID)+"'"
+            request = "UPDATE Lots set contractDuration ='"+str(contractDuration)+"' WHERE lotId ='"+str(lotId)+"'"
             cursor.execute(request)
         if not(publicityDuration==None):
-            request = "UPDATE Lots set publicityDuration ='"+str(publicityDuration)+"' WHERE lotID ='"+str(lotID)+"'"
+            request = "UPDATE Lots set publicityDuration ='"+str(publicityDuration)+"' WHERE lotId ='"+str(lotId)+"'"
             cursor.execute(request)
     request = "DROP TABLE IF EXISTS contractNotices"
     sql = cursor.execute(request)
@@ -1531,7 +1532,7 @@ if __name__ == '__main__':
     # Creation of the database
     print("---Creation of FOPPA---")
     db = databaseCreation("Foppa.db")
-
+    
     # Load each csv files of data europa
     print("---Load TED Files---")
     datas = load_csv_files()
@@ -1582,7 +1583,7 @@ if __name__ == '__main__':
     # Export the database
     print("---Export---") 
     exportDatabase(db)
-    
     db.close()
     os.remove("Foppa.db")
     del db
+    
