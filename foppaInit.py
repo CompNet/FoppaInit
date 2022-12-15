@@ -11,7 +11,7 @@ import re
 import time
 from os import walk
 from datetime import date
-from blazingsql import BlazingContext
+#from blazingsql import BlazingContext
 from rapidfuzz import fuzz
 from rapidfuzz import process
 import logging
@@ -37,7 +37,6 @@ def downloadFiles():
     os.mkdir("data/geolocate")        #For localisation of SIRENE entities
     
     #### Contract award
-    
     urls = ["https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2010.zip",
             "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2011.zip",
             "https://data.europa.eu/api/hub/store/data/ted-contract-award-notices-2012.zip",
@@ -93,7 +92,7 @@ def downloadFiles():
     compt=-1
     with pd.read_csv("data/opening/StockEtablissementHistorique_utf8.csv", chunksize=chunksize,dtype="str") as reader:
         for chunk in reader:
-            if compt<1:
+            if compt>-1:
                 compt=compt+1 
                 chunk = chunk[["siret","dateDebut","dateFin"]]
                 name = "data/opening/HistoPart"+str(compteur)+".csv"
@@ -128,7 +127,7 @@ def downloadFiles():
     chunksize = 10 ** 6
     compt=-1
     for chunk in pd.read_csv(filename, chunksize=chunksize,dtype = str):
-        if compt<1:
+        if compt>-2:
             compt=compt+1
             for l in range(len(chunk)):
                     if not(str(chunk["denominationUniteLegale"][chunksize*compt+l]) == "nan"):
@@ -213,11 +212,15 @@ def downloadFiles():
         with zipfile.ZipFile("Sirene.zip", 'r') as zip_ref:
             zip_ref.extractall("data/geolocate")        
     
-
+    
 def databaseCreation(nameDatabase):
     """Creation of the tables of the database"""
     database = sqlite3.connect(nameDatabase)
     cursor = database.cursor()
+    request = "DROP TABLE IF EXISTS Lots"
+    sql = cursor.execute(request)
+    request = "CREATE TABLE Lots(lotId INTEGER,tedCanId INTEGER,correctionsNB INTEGER,cancelled INTEGER,awardDate TEXT,awardEstimatedPrice NUMERIC,awardPrice NUMERIC,cpv TEXT,tenderNumber INTEGER,onBehalf TINYINT,jointProcurement TINYINT,fraAgreement TINYINT,fraEstimated INTEGER,lotsNumber INTEGER,accelerated TINYINT,outOfDirectives TINYINT,contractorSme TINYINT,numberTendersSme INTEGER,subContracted TINYINT,gpa	TINYINT,multipleCae	TINYINT,typeOfContract TEXT,topType	TEXT,renewal TINYINT, contractDuration INTEGER, publicityDuration INTEGER,PRIMARY KEY(lotId))"
+    sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS AgentsBase"
     sql = cursor.execute(request)
     request = "CREATE TABLE AgentsBase(agentId INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, date TEXT,type TEXT,PRIMARY KEY(agentId))"
@@ -233,10 +236,6 @@ def databaseCreation(nameDatabase):
     request = "DROP TABLE IF EXISTS CriteriaTemp"
     sql = cursor.execute(request)
     request = "CREATE TABLE CriteriaTemp (lotId INTEGER,CRIT_PRICE_WEIGHT TEXT,CRIT_WEIGHTS TEXT, CRIT_CRITERIA TEXT)"
-    sql = cursor.execute(request)
-    request = "DROP TABLE IF EXISTS Lots"
-    sql = cursor.execute(request)
-    request = "CREATE TABLE Lots(lotId INTEGER,tedCanId INTEGER,correctionsNB INTEGER,cancelled INTEGER,awardDate TEXT,awardEstimatedPrice NUMERIC,awardPrice NUMERIC,cpv TEXT,tenderNumber INTEGER,onBehalf TINYINT,jointProcurement TINYINT,fraAgreement TINYINT,fraEstimated INTEGER,lotsNumber INTEGER,accelerated TINYINT,outOfDirectives TINYINT,contractorSme TINYINT,numberTendersSme INTEGER,subContracted TINYINT,gpa	TINYINT,multipleCae	TINYINT,typeOfContract TEXT,topType	TEXT,renewal TINYINT, contractDuration INTEGER, publicityDuration INTEGER,PRIMARY KEY(lotId))"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS LotClients"
     sql = cursor.execute(request)
@@ -707,6 +706,8 @@ def fineTuningAgents(database):
     sql = cursor.execute(request)
     request = "UPDATE AgentsSiretiser SET zipcode = NULLIF(zipcode,'None')"
     sql = cursor.execute(request)
+    request = "DELETE FROM AgentsSiretiser WHERE country='INFRUCTUEUX'"
+    sql = cursor.execute(request)
     database.commit()
     return database
 
@@ -779,7 +780,7 @@ def criteriaProcessing(database):
     cursor = database.cursor()
     request = "DROP TABLE IF EXISTS Criteria"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Criteria (criterionId INTEGER,lotId INTEGER,name TEXT,weight INTEGER,type TEXT,PRIMARY KEY(criterionId),FOREIGN KEY(lotId) REFERENCES Lots(lotId) ON UPDATE CASCADE)"
+    request = "CREATE TABLE Criteria (criterionId INTEGER,lotId INTEGER,name TEXT,weight INTEGER,type TEXT,PRIMARY KEY(criterionId))"
     sql = cursor.execute(request)
     datas = pd.read_sql_query("SELECT * FROM CriteriaTemp", database,dtype=str) 
     datas["CRIT_PRICE_WEIGHT"] =datas["CRIT_PRICE_WEIGHT"].str.replace("-","",regex=True)
@@ -1337,6 +1338,17 @@ def finalTableAgent(database):
             val = (dico[int(namesID[i])],namesAgent[i])
             cursor.execute(sql,val)
 
+    
+    request = "UPDATE Agents SET name = NULLIF(name,'None')"
+    sql = cursor.execute(request)
+    request = "UPDATE Agents SET siret = NULLIF(siret,'None')"
+    sql = cursor.execute(request)
+    request = "UPDATE Agents SET address = NULLIF(address,'None')"
+    sql = cursor.execute(request)
+    request = "UPDATE Agents SET city = NULLIF(city,'None')"
+    sql = cursor.execute(request)
+    request = "UPDATE Agents SET zipcode = NULLIF(zipcode,'None')"
+    sql = cursor.execute(request)
     database.commit()
     return database
 
@@ -1438,7 +1450,7 @@ def cleaningDatabase(database):
     database.commit()
     os.remove("ADeduper.csv")
     os.remove("ResDedupe.csv")
-    #os.remove("data/geolocate/GeolocalisationEtablissement_Sirene_pour_etudes_statistiques_utf8.csv")
+    os.remove("data/geolocate/GeolocalisationEtablissement_Sirene_pour_etudes_statistiques_utf8.csv")
     return database
 
 
@@ -1519,6 +1531,7 @@ def exportDatabase(database):
     
     file = open("FOPPA/FOPPA.sql","w")
     for line in database.iterdump():
+        print(line)
         file.write(line)
         file.write("\n")
         
@@ -1584,6 +1597,6 @@ if __name__ == '__main__':
     print("---Export---") 
     exportDatabase(db)
     db.close()
-    os.remove("Foppa.db")
+    #os.remove("Foppa.db")
     del db
     
