@@ -1,4 +1,4 @@
-FoppaInit v1.0.1
+FoppaInit v1.0.2
 -------------------------------------------------------------------------
 *Initialization of the FOPPA database*
 
