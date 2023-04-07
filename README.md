@@ -2,7 +2,7 @@ FoppaInit v1.0.2
 -------------------------------------------------------------------------
 *Initialization of the FOPPA database*
 
-* Copyright 2021-2022 Lucas Potin & Vincent Labatut
+* Copyright 2021-2023 Lucas Potin & Vincent Labatut
 
 FoppaInit is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation. For source availability and license information see `licence.txt`
 
