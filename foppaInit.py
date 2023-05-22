@@ -237,13 +237,13 @@ def databaseCreation(nameDatabase):
     sql = cursor.execute(request)
     request = "CREATE TABLE CriteriaTemp (lotId INTEGER,CRIT_PRICE_WEIGHT TEXT,CRIT_WEIGHTS TEXT, CRIT_CRITERIA TEXT)"
     sql = cursor.execute(request)
-    request = "DROP TABLE IF EXISTS LotClients"
+    request = "DROP TABLE IF EXISTS LotBuyers"
     sql = cursor.execute(request)
-    request = "CREATE TABLE LotClients(lotId INTEGER,agentId INTEGER,FOREIGN KEY(agentId) REFERENCES Agents(agentId) ON UPDATE CASCADE,FOREIGN KEY(lotId) REFERENCES Lots(lotId) ON UPDATE CASCADE)"
+    request = "CREATE TABLE LotBuyers(lotId INTEGER,agentId INTEGER,FOREIGN KEY(agentId) REFERENCES Agents(agentId) ON UPDATE CASCADE,FOREIGN KEY(lotId) REFERENCES Lots(lotId) ON UPDATE CASCADE)"
     sql = cursor.execute(request)
-    request = "DROP TABLE IF EXISTS LotSuppliers"
+    request = "DROP TABLE IF EXISTS LotWinners"
     sql = cursor.execute(request)
-    request = "CREATE TABLE LotSuppliers(lotId INTEGER,agentId INTEGER,FOREIGN KEY(agentId) REFERENCES Agents(agentId) ON UPDATE CASCADE,FOREIGN KEY(lotId) REFERENCES Lots(lotId) ON UPDATE CASCADE)"
+    request = "CREATE TABLE LotWinners(lotId INTEGER,agentId INTEGER,FOREIGN KEY(agentId) REFERENCES Agents(agentId) ON UPDATE CASCADE,FOREIGN KEY(lotId) REFERENCES Lots(lotId) ON UPDATE CASCADE)"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS Names"
     sql = cursor.execute(request)
@@ -384,7 +384,7 @@ def firstCleaning(datas,database):
                 VALUES (?,?,?,?,?,?,?,?,?)'''
             val = (compteurAgent,tempName,tempSiret,tempAddress,tempTown,tempPC,tempCountry,date,"CAE")
             cur.execute(sql,val)
-            sql = ''' INSERT INTO LotClients(lotId,agentId)
+            sql = ''' INSERT INTO LotBuyers(lotId,agentId)
                 VALUES (?,?)'''
             val = (i,compteurAgent)
             cur.execute(sql,val)
@@ -443,7 +443,7 @@ def firstCleaning(datas,database):
                     VALUES (?,?,?,?,?,?,?,?,?)'''
             val = (compteurAgent,tempName,tempSiret,tempAddress,tempTown,tempPC,tempCountry,date,"WIN")
             cur.execute(sql,val)
-            sql = ''' INSERT INTO LotSuppliers(lotId,agentId)
+            sql = ''' INSERT INTO LotWinners(lotId,agentId)
                     VALUES (?,?)'''
             val = (i,compteurAgent)
             cur.execute(sql,val)
@@ -1258,8 +1258,8 @@ def dedupeAgent(datas,database):
     
 def finalTableAgent(database):
     cursor = database.cursor()
-    clients = pd.read_sql_query("SELECT * FROM LotClients", database,dtype=str)
-    suppliers = pd.read_sql_query("SELECT * FROM LotSuppliers", database,dtype=str)
+    clients = pd.read_sql_query("SELECT * FROM LotBuyers", database,dtype=str)
+    suppliers = pd.read_sql_query("SELECT * FROM LotWinners", database,dtype=str)
     names = pd.read_sql_query("SELECT * FROM Names", database,dtype=str)
     datas = pd.read_csv("ResDedupe.csv",dtype=str,sep=",")
     lenCluster = len(datas.groupby("Cluster ID").count())
@@ -1267,13 +1267,13 @@ def finalTableAgent(database):
     sql = cursor.execute(request)
     request = "CREATE TABLE Agents(agentId INTEGER,name TEXT,siret TEXT,address TEXT,city TEXT,zipcode	TEXT,country TEXT, department TEXT,longitude TEXT, latitude TEXT,PRIMARY KEY(agentId))"
     sql = cursor.execute(request)
-    request = "DROP TABLE IF EXISTS LotClients"
+    request = "DROP TABLE IF EXISTS LotBuyers"
     sql = cursor.execute(request)
-    request = "CREATE TABLE LotClients(lotId INTEGER,agentId INTEGER)"
+    request = "CREATE TABLE LotBuyers(lotId INTEGER,agentId INTEGER)"
     sql = cursor.execute(request)
-    request = "DROP TABLE IF EXISTS LotSuppliers"
+    request = "DROP TABLE IF EXISTS LotWinners"
     sql = cursor.execute(request)
-    request = "CREATE TABLE LotSuppliers(lotId INTEGER,agentId INTEGER)"
+    request = "CREATE TABLE LotWinners(lotId INTEGER,agentId INTEGER)"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS Names"
     sql = cursor.execute(request)
@@ -1297,14 +1297,14 @@ def finalTableAgent(database):
 
     for i in range(len(clientsLot)):
         if (int(clientsAgent[i]) in dico):
-            sql = ''' INSERT OR IGNORE INTO LotClients(lotId,agentId)
+            sql = ''' INSERT OR IGNORE INTO LotBuyers(lotId,agentId)
                         VALUES (?,?)'''
             val = (int(clientsLot[i]),int(dico[int(clientsAgent[i])]))
             cursor.execute(sql,val)
             
     for i in range(len(suppliersLot)):
         if (int(suppliersAgent[i]) in dico):
-            sql = ''' INSERT OR IGNORE INTO LotSuppliers(lotId,agentId)
+            sql = ''' INSERT OR IGNORE INTO LotWinners(lotId,agentId)
                         VALUES (?,?)'''
             val = (int(suppliersLot[i]),int(dico[int(suppliersAgent[i])]))
             cursor.execute(sql,val)
@@ -1522,10 +1522,10 @@ def exportDatabase(database):
     agents.to_csv("FOPPA/csv/Agents.csv",index=False)
     criteria = pd.read_sql_query("SELECT * FROM Criteria", database)
     criteria.to_csv("FOPPA/csv/Criteria.csv",index=False)
-    lotsClients = pd.read_sql_query("SELECT * FROM LotClients", database)
-    lotsClients.to_csv("FOPPA/csv/LotClients.csv",index=False)
-    lotsSuppliers = pd.read_sql_query("SELECT * FROM LotSuppliers", database)
-    lotsSuppliers.to_csv("FOPPA/csv/LotSuppliers.csv",index=False)
+    lotsClients = pd.read_sql_query("SELECT * FROM LotBuyers", database)
+    lotsClients.to_csv("FOPPA/csv/LotBuyers.csv",index=False)
+    lotsSuppliers = pd.read_sql_query("SELECT * FROM LotWinners", database)
+    lotsSuppliers.to_csv("FOPPA/csv/LotWinners.csv",index=False)
     names = pd.read_sql_query("SELECT * FROM Names", database)
     names.to_csv("FOPPA/csv/Names.csv",index=False)
     
