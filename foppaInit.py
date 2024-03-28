@@ -219,7 +219,7 @@ def databaseCreation(nameDatabase):
     cursor = database.cursor()
     request = "DROP TABLE IF EXISTS Lots"
     sql = cursor.execute(request)
-    request = "CREATE TABLE Lots(lotId INTEGER,tedCanId INTEGER,correctionsNB INTEGER,cancelled INTEGER,awardDate TEXT,awardEstimatedPrice NUMERIC,awardPrice NUMERIC,cpv TEXT,tenderNumber INTEGER,onBehalf TINYINT,jointProcurement TINYINT,fraAgreement TINYINT,fraEstimated INTEGER,lotsNumber INTEGER,accelerated TINYINT,outOfDirectives TINYINT,contractorSme TINYINT,numberTendersSme INTEGER,subContracted TINYINT,gpa	TINYINT,multipleCae	TINYINT,typeOfContract TEXT,topType	TEXT,renewal TINYINT, contractDuration INTEGER, publicityDuration INTEGER,PRIMARY KEY(lotId))"
+    request = "CREATE TABLE Lots(lotId INTEGER,tedCanId INTEGER,correctionsNB INTEGER,cancelled INTEGER,awardDate TEXT,awardEstimatedPrice NUMERIC,awardPrice NUMERIC,cpv TEXT,tenderNumber INTEGER,onBehalf TINYINT,jointProcurement TINYINT,fraAgreement TINYINT,fraEstimated TEXT,lotsNumber INTEGER,accelerated TINYINT,outOfDirectives TINYINT,contractorSme TINYINT,numberTendersSme INTEGER,subContracted TINYINT,gpa	TINYINT,multipleCae	TINYINT,typeOfContract TEXT,topType	TEXT,renewal TINYINT, contractDuration NUMERIC, publicityDuration NUMERIC,PRIMARY KEY(lotId))"
     sql = cursor.execute(request)
     request = "DROP TABLE IF EXISTS AgentsBase"
     sql = cursor.execute(request)
@@ -275,6 +275,26 @@ def firstCleaning(datas,database):
     
     # Parenthesis deletion
     datas["CAE_NAME"] = datas["CAE_NAME"].replace(regex=r'\([^)]*\)',value=r"")
+
+    # Replace "Y" by 1 and "N" by 0 on boolean columns
+    datas["B_ON_BEHALF"] = datas["B_ON_BEHALF"].replace(regex=r'Y',value=r"1")
+    datas["B_ON_BEHALF"] = datas["B_ON_BEHALF"].replace(regex=r'N',value=r"0")
+    datas["B_INVOLVES_JOINT_PROCUREMENT"] = datas["B_INVOLVES_JOINT_PROCUREMENT"].replace(regex=r'Y',value=r"1")
+    datas["B_INVOLVES_JOINT_PROCUREMENT"] = datas["B_INVOLVES_JOINT_PROCUREMENT"].replace(regex=r'N',value=r"0")
+    datas["B_FRA_AGREEMENT"] = datas["B_FRA_AGREEMENT"].replace(regex=r'Y',value=r"1")
+    datas["B_FRA_AGREEMENT"] = datas["B_FRA_AGREEMENT"].replace(regex=r'N',value=r"0")
+    datas["B_ACCELERATED"] = datas["B_ACCELERATED"].replace(regex=r'Y',value=r"1")
+    datas["B_ACCELERATED"] = datas["B_ACCELERATED"].replace(regex=r'N',value=r"0")
+    datas["B_OUT_OF_DIRECTIVES"] = datas["B_OUT_OF_DIRECTIVES"].replace(regex=r'Y',value=r"1")
+    datas["B_OUT_OF_DIRECTIVES"] = datas["B_OUT_OF_DIRECTIVES"].replace(regex=r'N',value=r"0")
+    datas["B_CONTRACTOR_SME"] = datas["B_CONTRACTOR_SME"].replace(regex=r'Y',value=r"1")
+    datas["B_CONTRACTOR_SME"] = datas["B_CONTRACTOR_SME"].replace(regex=r'N',value=r"0")
+    datas["B_SUBCONTRACTED"] = datas["B_SUBCONTRACTED"].replace(regex=r'Y',value=r"1")
+    datas["B_SUBCONTRACTED"] = datas["B_SUBCONTRACTED"].replace(regex=r'N',value=r"0")
+    datas["B_GPA"] = datas["B_GPA"].replace(regex=r'Y',value=r"1")
+    datas["B_GPA"] = datas["B_GPA"].replace(regex=r'N',value=r"0")
+    datas["B_MULTIPLE_CAE"] = datas["B_MULTIPLE_CAE"].replace(regex=r'Y',value=r"1")
+    datas["B_MULTIPLE_CAE"] = datas["B_MULTIPLE_CAE"].replace(regex=r'N',value=r"0")
     
     nameCAE = np.array(datas["CAE_NAME"])
     siretCAE = np.array(datas["CAE_NATIONALID"])
