@@ -20,6 +20,18 @@ The process conducted to build the FOPPA is quite long, though (around 1 week, d
 
 This work was conducted in the framework of the [DeCoMaP](https://anr.fr/Projet-ANR-19-CE38-0004) ANR project (*Detection of corruption in public procurement markets* -- `ANR-19-CE38-0004`). If you use this source code or the produced database, please cite bibliographical reference [[P'23]](#references) (the article, not the report).
 
+```bibtex
+@Article{Potin2023a,
+  author    = {Potin, Lucas and Labatut, Vincent and Morand, Pierre-Henri and Largeron, Christine},
+  title     = {{FOPPA}: an Open Database of French Public Procurement Award Notices From 2010--2020},
+  journal   = {Scientific Data},
+  year      = {2023},
+  volume    = {10},
+  pages     = {303},
+  doi       = {10.1038/s41597-023-02213-z},
+}
+```
+
 # Organization
 This repository is composed of the following elements:
 * `requirements.txt` : List of Python packages used in foppaInit.py.
