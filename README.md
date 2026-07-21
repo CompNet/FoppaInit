@@ -32,6 +32,7 @@ This work was conducted in the framework of the [DeCoMaP](https://anr.fr/Projet-
 }
 ```
 
+
 # Organization
 This repository is composed of the following elements:
 * `requirements.txt` : List of Python packages used in foppaInit.py.
@@ -44,9 +45,10 @@ The script requires the TED data and leverages some additional sources:
 * SIRENE : https://www.data.gouv.fr/fr/datasets/base-sirene-des-entreprises-et-de-leurs-etablissements-siren-siret/
 * GeoSIRENE : https://www.data.gouv.fr/fr/datasets/geolocalisation-des-etablissements-du-repertoire-sirene-pour-les-etudes-statistiques/
 
+
 # Installation
 You first need to install `python` and the required packages:
-1. Install the Python language: https://www.python.org
+1. Install the [`Python` language](https://www.python.org)
 2. Download this project from GitHub and unzip.
 3. Install CUDA: https://developer.nvidia.com/cuda-downloads
 4. Execute `pip install -r requirements.txt` to install some of the required packages (see also the *Dependencies* Section).
@@ -55,6 +57,7 @@ Package `blazingsql` requires a specific installation:
 1. Go to Webpage https://rapids.ai/start.html
 2. Configure your setup in this Webpage.
 3. Execute the generated command.
+
 
 # Use
 In order to build the FOPPA database:
@@ -66,6 +69,7 @@ The script is going to perform several tasks:
 2. Apply the processing described in [[P'22]](#references).
 3. Export the resulting database under different forms (SQL dump, CSV sheets).
 
+
 # Dependencies
 Tested with Python version 3.8.0, with the following packages:
 * [`sqlite3`](https://www.sqlite.org/releaselog/3_39_4.html): version 3.39.4
@@ -75,12 +79,14 @@ Tested with Python version 3.8.0, with the following packages:
 * [`rapidfuzz`](https://pypi.org/project/rapidfuzz/): version 2.11.1.
 * [`dedupe`](https://pypi.org/project/dedupe/): version 2.0.19.
 
+
 # Data
 The produced database is directly available publicly online on [Zenodo](https://doi.org/10.5281/zenodo.10879932), under four different forms:
 * SQLite file: https://www.sqlite.org/index.html
 * SQLite dump.
 * MySQL dump.
 * CSV files (one by table).
+
 
 # References
 * **[P'23]** L. Potin, V. Labatut, P. H. Morand & C. Largeron. *FOPPA: An Open Database of French Public Procurement Award Notices From 2010–2020*, Scientific Data, 2023, 10:303. DOI: [10.1038/s41597-023-02213-z](https://dx.doi.org/10.1038/s41597-023-02213-z) [⟨hal-04101350⟩](https://hal.archives-ouvertes.fr/hal-04101350)
